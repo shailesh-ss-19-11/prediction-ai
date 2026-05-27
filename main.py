@@ -16,7 +16,7 @@ from exchanges.delta_exchange import DeltaExchange
 from exchanges.ws_stream import start as ws_start, get_price as ws_price
 from core.market_data import MarketDataManager
 from core.indicators import calculate_all
-from core.patterns import get_best_pattern
+from core.patterns import detect_all as detect_patterns
 from core.market_structure import get_structure_summary
 from core.smc import (detect_order_blocks, detect_fair_value_gaps,
                       detect_liquidity_sweeps, get_institutional_zones)
@@ -94,7 +94,7 @@ def check_symbol(symbol: str) -> None:
             return
 
         # Strategy analysis
-        pattern   = get_best_pattern(df_15m)
+        pattern   = detect_patterns(df_15m)  # returns list[CandlePattern]
         structure = get_structure_summary(df_4h)
         smc_data  = {
             "order_blocks": detect_order_blocks(df_15m),
@@ -160,7 +160,13 @@ def check_symbol(symbol: str) -> None:
 # Scheduler
 # ---------------------------------------------------------------------------
 
+_status_lines: list[str] = []   # collects per-symbol status each scan
+
+
 def run_checks() -> None:
+    global _status_lines
+    _status_lines = []
+
     # Close paper trades that hit SL/TP
     try:
         prices = {s: (ws_price(s) or market_data.get_current_price(s))
@@ -174,6 +180,21 @@ def run_checks() -> None:
 
     for symbol in config.SYMBOLS:
         check_symbol(symbol)
+
+
+def send_hourly_status() -> None:
+    """Send a brief Telegram status every hour so user knows bot is alive."""
+    try:
+        lines = ["🤖 <b>Bot Status — No signal yet</b>\n"]
+        for symbol in config.SYMBOLS:
+            price = ws_price(symbol) or market_data.get_current_price(symbol)
+            if price:
+                lines.append(f"• <b>{symbol}</b>  ${price:,.2f}")
+        lines.append(f"\n⏳ Scanning every {config.CHECK_INTERVAL_MINUTES} min")
+        lines.append("🔍 Waiting for 6/7 conditions to align...")
+        telegram.send_text("\n".join(lines))
+    except Exception:
+        logger.exception("Hourly status error")
 
 
 # ---------------------------------------------------------------------------
@@ -201,6 +222,7 @@ def main() -> None:
 
     run_checks()
     schedule.every(config.CHECK_INTERVAL_MINUTES).minutes.do(run_checks)
+    schedule.every(1).hours.do(send_hourly_status)
     schedule.every().day.at("00:00").do(ot_filter.reset_daily)
 
     logger.info("Running. Ctrl+C to stop.")

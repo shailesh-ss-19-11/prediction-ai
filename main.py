@@ -41,7 +41,7 @@ market_data = MarketDataManager(exchange)
 strategy    = TrendStrategy()
 risk_mgr    = RiskManager(config.ACCOUNT_BALANCE, config.MAX_RISK_PERCENT)
 paper       = PaperTradingEngine(config.ACCOUNT_BALANCE)
-telegram    = TelegramNotifier(config.TELEGRAM_BOT_TOKEN, config.TELEGRAM_CHAT_ID)
+telegram    = TelegramNotifier(config.TELEGRAM_BOT_TOKEN, config.TELEGRAM_CHAT_IDS)
 
 vol_filter = VolatilityFilter()
 ot_filter  = OvertradingFilter(max_signals_per_day=3)

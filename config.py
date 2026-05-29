@@ -5,7 +5,7 @@
 
 # --- Telegram ---
 TELEGRAM_BOT_TOKEN = "8800960300:AAExwJ0q7WkWipz2RkvKw9-4Y28ePM5TAUc"   # From @BotFather
-TELEGRAM_CHAT_ID   = "1948356544"   # From @userinfobot
+TELEGRAM_CHAT_IDS  = ["1948356544", "7151542571"]   # Add more chat IDs here
 
 # --- Account ---
 ACCOUNT_BALANCE    = 100  # USD — used for lot-size calculation

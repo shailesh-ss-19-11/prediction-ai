@@ -13,28 +13,30 @@ _API = "https://api.telegram.org/bot{token}/sendMessage"
 
 
 class TelegramNotifier:
-    def __init__(self, token: str, chat_id: str):
-        self.token   = token
-        self.chat_id = chat_id
+    def __init__(self, token: str, chat_ids):
+        self.token    = token
+        self.chat_ids = [chat_ids] if isinstance(chat_ids, str) else [c for c in chat_ids if c]
 
     def _post(self, text: str) -> bool:
-        if not self.token or not self.chat_id:
+        if not self.token or not self.chat_ids:
             logger.warning("Telegram not configured:\n%s", text)
             return False
 
         url     = _API.format(token=self.token)
-        payload = {"chat_id": self.chat_id, "text": text, "parse_mode": "HTML"}
-
-        for attempt in range(3):
-            try:
-                r = requests.post(url, json=payload, timeout=10)
-                r.raise_for_status()
-                return True
-            except requests.exceptions.RequestException as e:
-                logger.warning("Telegram attempt %d/3 failed: %s", attempt + 1, e)
-                if attempt < 2:
-                    time.sleep(5)
-        return False
+        success = False
+        for chat_id in self.chat_ids:
+            payload = {"chat_id": chat_id, "text": text, "parse_mode": "HTML"}
+            for attempt in range(3):
+                try:
+                    r = requests.post(url, json=payload, timeout=10)
+                    r.raise_for_status()
+                    success = True
+                    break
+                except requests.exceptions.RequestException as e:
+                    logger.warning("Telegram %s attempt %d/3 failed: %s", chat_id, attempt + 1, e)
+                    if attempt < 2:
+                        time.sleep(5)
+        return success
 
     def send_signal(self, symbol: str, direction: str,
                     entry: float, sl: float, tp1: float, tp2: float,

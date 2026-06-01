@@ -274,6 +274,8 @@ def get_sentiment(symbol: str) -> SentimentResult:
     """
     cached = _cached(symbol)
     if cached is not None:
+        logger.debug("News cache hit for %s (label=%s score=%.3f)",
+                     symbol, cached.label, cached.score)
         return cached
 
     result = None

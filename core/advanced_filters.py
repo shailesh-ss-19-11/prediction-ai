@@ -335,12 +335,21 @@ class OvertradingFilter:
         Automatically resets counters at UTC midnight.
         """
         self._auto_reset_if_new_day()
-        return self._signals[symbol.upper()] < self._max
+        sym = symbol.upper()
+        count = self._signals[sym]
+        if count >= self._max:
+            logger.info("[OvertradingFilter] %s blocked — daily cap reached (%d/%d)",
+                        sym, count, self._max)
+            return False
+        return True
 
     def record_signal(self, symbol: str) -> None:
         """Increment the daily signal counter for *symbol*."""
         self._auto_reset_if_new_day()
-        self._signals[symbol.upper()] += 1
+        sym = symbol.upper()
+        self._signals[sym] += 1
+        logger.debug("[OvertradingFilter] %s signal count: %d/%d",
+                     sym, self._signals[sym], self._max)
 
     def reset_daily(self) -> None:
         """Reset all counters.  Call at UTC midnight or on new trading day."""

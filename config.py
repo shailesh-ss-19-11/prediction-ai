@@ -3,6 +3,15 @@
 # Fill in TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID before running
 # ============================================================
 
+# --- Logging ---
+LOG_LEVEL        = "INFO"          # DEBUG | INFO | WARNING | ERROR
+LOG_TO_FILE      = True
+LOG_DIR          = "logs"
+LOG_FILE         = "logs/bot.log"
+LOG_ERROR_FILE   = "logs/errors.log"
+LOG_MAX_BYTES    = 5 * 1024 * 1024   # 5 MB per file
+LOG_BACKUP_COUNT = 5                  # keep last 5 rotated files
+
 # --- Telegram ---
 TELEGRAM_BOT_TOKEN = "8800960300:AAExwJ0q7WkWipz2RkvKw9-4Y28ePM5TAUc"   # From @BotFather
 TELEGRAM_CHAT_IDS  = ["1948356544", "7151542571"]   # Add more chat IDs here

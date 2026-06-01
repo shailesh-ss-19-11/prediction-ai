@@ -26,9 +26,9 @@ TIMEFRAMES = ["1m", "5m", "15m", "1h", "4h", "1d"]
 CANDLE_LIMITS: Dict[str, int] = {
     "1m":  20,
     "5m":  30,
-    "15m": 50,
-    "1h":  100,
-    "4h":  200,
+    "15m": 60,    # 15 hours — enough for pattern + volume context
+    "1h":  250,   # ~10 days — EMA200 needs min 200 candles to be valid
+    "4h":  300,   # ~50 days — EMA200 warm-up + structure history
     "1d":  200,
 }
 

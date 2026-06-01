@@ -5,6 +5,8 @@ Message contains: Entry, SL, TP1, TP2, lot size. Nothing else.
 """
 
 import logging
+import logging.handlers
+import os
 import sys
 import time
 from datetime import datetime, timezone
@@ -12,6 +14,7 @@ from datetime import datetime, timezone
 import schedule
 
 import config
+import trade_journal
 from exchanges.delta_exchange import DeltaExchange
 from exchanges.ws_stream import start as ws_start, get_price as ws_price
 from core.market_data import MarketDataManager
@@ -21,17 +24,55 @@ from core.market_structure import get_structure_summary
 from core.smc import (detect_order_blocks, detect_fair_value_gaps,
                       detect_liquidity_sweeps, get_institutional_zones)
 from core.strategy import TrendStrategy
-from core.advanced_filters import VolatilityFilter, OvertradingFilter
+from core.advanced_filters import VolatilityFilter, OvertradingFilter, SessionFilter
 from risk.risk_manager import RiskManager
 from execution.paper_trading import PaperTradingEngine
 from notifications.telegram import TelegramNotifier
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    datefmt="%H:%M:%S",
-)
-logger = logging.getLogger("main")
+def _setup_logging() -> logging.Logger:
+    log_level = getattr(logging, config.LOG_LEVEL.upper(), logging.INFO)
+    fmt = "%(asctime)s [%(levelname)s] %(name)s — %(message)s"
+    datefmt = "%Y-%m-%d %H:%M:%S"
+    formatter = logging.Formatter(fmt, datefmt=datefmt)
+
+    root = logging.getLogger()
+    root.setLevel(logging.DEBUG)   # capture everything; handlers filter by level
+
+    # Console: INFO and above
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(log_level)
+    console_handler.setFormatter(formatter)
+    root.addHandler(console_handler)
+
+    if config.LOG_TO_FILE:
+        os.makedirs(config.LOG_DIR, exist_ok=True)
+
+        # Main log file: DEBUG and above (full detail)
+        file_handler = logging.handlers.RotatingFileHandler(
+            config.LOG_FILE,
+            maxBytes=config.LOG_MAX_BYTES,
+            backupCount=config.LOG_BACKUP_COUNT,
+            encoding="utf-8",
+        )
+        file_handler.setLevel(logging.DEBUG)
+        file_handler.setFormatter(formatter)
+        root.addHandler(file_handler)
+
+        # Error-only log file
+        error_handler = logging.handlers.RotatingFileHandler(
+            config.LOG_ERROR_FILE,
+            maxBytes=config.LOG_MAX_BYTES,
+            backupCount=config.LOG_BACKUP_COUNT,
+            encoding="utf-8",
+        )
+        error_handler.setLevel(logging.ERROR)
+        error_handler.setFormatter(formatter)
+        root.addHandler(error_handler)
+
+    return logging.getLogger("main")
+
+
+logger = _setup_logging()
 
 # ---------------------------------------------------------------------------
 # Singletons
@@ -43,8 +84,9 @@ risk_mgr    = RiskManager(config.ACCOUNT_BALANCE, config.MAX_RISK_PERCENT)
 paper       = PaperTradingEngine(config.ACCOUNT_BALANCE)
 telegram    = TelegramNotifier(config.TELEGRAM_BOT_TOKEN, config.TELEGRAM_CHAT_IDS)
 
-vol_filter = VolatilityFilter()
-ot_filter  = OvertradingFilter(max_signals_per_day=3)
+vol_filter     = VolatilityFilter()
+ot_filter      = OvertradingFilter(max_signals_per_day=3)
+session_filter = SessionFilter()
 
 # Cooldown: don't repeat same direction signal within 4 hours
 # Key format: "BTCUSD_LONG" or "BTCUSD_SHORT"
@@ -66,19 +108,36 @@ def _mark(key: str) -> None:
 
 def check_symbol(symbol: str) -> None:
     try:
+        # Block trading during Asian session (00:00–07:00 UTC) — low liquidity,
+        # erratic moves, most false signals fire here.
+        active_sessions = session_filter.get_active_sessions()
+        if not active_sessions or active_sessions == ["asian"]:
+            logger.info("%s: Asian/off-hours session only (%s) — skipping",
+                        symbol, active_sessions or "none")
+            return
+
+        signals_used = ot_filter.signals_today(symbol)
         if not ot_filter.can_trade(symbol):
+            logger.info("%s: daily signal cap reached (%d/%d) — skipping",
+                        symbol, signals_used, 3)
             return
 
         # Use WebSocket price if available, else REST fallback
-        current_price = ws_price(symbol) or market_data.get_current_price(symbol)
+        price_source = "WS"
+        current_price = ws_price(symbol)
         if not current_price:
-            logger.warning("%s: no price available", symbol)
+            price_source = "REST"
+            current_price = market_data.get_current_price(symbol)
+        if not current_price:
+            logger.warning("%s: no price available from WS or REST", symbol)
             return
+        logger.debug("%s: price $%.2f (source=%s)", symbol, current_price, price_source)
 
         # Fetch candles for strategy (REST)
         mtf = market_data.fetch_mtf_candles(symbol)
         if not mtf or not all(tf in mtf for tf in ("15m", "1h", "4h")):
-            logger.warning("%s: missing candle data", symbol)
+            missing = [tf for tf in ("15m", "1h", "4h") if tf not in (mtf or {})]
+            logger.warning("%s: missing candle data for timeframes: %s", symbol, missing)
             return
 
         df_15m, df_1h, df_4h = mtf["15m"], mtf["1h"], mtf["4h"]
@@ -87,38 +146,54 @@ def check_symbol(symbol: str) -> None:
         ind_15m = calculate_all(df_15m)
         ind_1h  = calculate_all(df_1h)
         ind_4h  = calculate_all(df_4h)
+        logger.debug(
+            "%s indicators — RSI15m:%.1f EMA20_1h:%.2f EMA200_4h:%.2f ATR:%.4f",
+            symbol, ind_15m.rsi_14, ind_1h.ema_20, ind_4h.ema_200, ind_15m.atr_14,
+        )
 
         # Skip extreme volatility (news spikes)
-        if vol_filter.get_volatility_state(df_15m, ind_15m.atr_14) == "extreme":
+        vol_state = vol_filter.get_volatility_state(df_15m, ind_15m.atr_14)
+        if vol_state == "extreme":
             logger.info("%s: extreme volatility — skipping", symbol)
             return
+        if vol_state != "normal":
+            logger.debug("%s: volatility state = %s", symbol, vol_state)
 
         # Strategy analysis
-        pattern   = detect_patterns(df_15m)  # returns list[CandlePattern]
+        pattern   = detect_patterns(df_15m)
         structure = get_structure_summary(df_4h)
+        bias      = structure.get("bias", "?")
+        logger.debug("%s: 4h structure bias=%s | patterns detected=%d",
+                     symbol, bias, len(pattern))
+
+        ob_list = detect_order_blocks(df_15m)
+        fvg_list = detect_fair_value_gaps(df_15m)
         smc_data  = {
-            "order_blocks": detect_order_blocks(df_15m),
-            "fvg":          detect_fair_value_gaps(df_15m),
+            "order_blocks": ob_list,
+            "fvg":          fvg_list,
             "sweeps":       detect_liquidity_sweeps(df_15m, []),
-            "zones":        get_institutional_zones(
-                                detect_order_blocks(df_15m),
-                                detect_fair_value_gaps(df_15m)
-                            ),
+            "zones":        get_institutional_zones(ob_list, fvg_list),
         }
+        logger.debug("%s: SMC — OBs=%d FVGs=%d",
+                     symbol, len(ob_list), len(fvg_list))
 
         setups = strategy.evaluate(symbol, mtf, ind_15m, ind_1h, ind_4h,
                                    pattern, structure, smc_data)
 
         if not setups:
-            logger.info("%s $%s | trend:%s | structure:%s",
+            logger.info("%s $%s | trend:%s | bias:%s | RSI:%.1f | no setup",
                         symbol, f"{current_price:,.2f}",
-                        ind_4h.trend_ema, structure.get("bias", "?"))
+                        ind_4h.trend_ema, bias, ind_15m.rsi_14)
             return
 
+        logger.info("%s: %d setup(s) found", symbol, len(setups))
+
         for setup in setups:
-            # Per-direction cooldown key e.g. "BTCUSD_LONG"
             cooldown_key = f"{symbol}_{setup.direction}"
             if _on_cooldown(cooldown_key):
+                remaining = int(_COOLDOWN - (time.time() - _last_signal.get(cooldown_key, 0)))
+                logger.info("%s %s: cooldown active (%ds remaining)",
+                            symbol, setup.direction, remaining)
                 continue
 
             # Risk check
@@ -128,10 +203,22 @@ def check_symbol(symbol: str) -> None:
                             symbol, setup.direction, risk.reason)
                 continue
 
-            # Paper trade
+            logger.info(
+                "%s %s: setup valid | conf=%.0f%% | entry=%.2f | sl=%.2f | "
+                "tp1=%.2f | rr=%.2f | lots=%.4f",
+                symbol, setup.direction, setup.confidence * 100,
+                setup.entry, setup.stop_loss, setup.tp1, setup.rr, risk.lot_size,
+            )
+            if setup.reasons:
+                logger.debug("%s %s: conditions — %s",
+                             symbol, setup.direction, " | ".join(setup.reasons))
+
+            # Paper trade — open position and capture the trade ID for journal
+            trade_id = None
             if config.PAPER_TRADING_MODE:
-                paper.open_trade(symbol, setup.direction, setup.entry,
-                                 setup.stop_loss, setup.tp1, setup.tp2, risk.lot_size)
+                trade = paper.open_trade(symbol, setup.direction, setup.entry,
+                                         setup.stop_loss, setup.tp1, setup.tp2, risk.lot_size)
+                trade_id = trade.id
 
             # Send signal to Telegram
             sent = telegram.send_signal(
@@ -148,9 +235,27 @@ def check_symbol(symbol: str) -> None:
             if sent:
                 _mark(cooldown_key)
                 ot_filter.record_signal(symbol)
-                logger.info("✅ %s %s | Entry %.2f | SL %.2f | TP %.2f | Lots %.3f",
+                logger.info("SIGNAL SENT: %s %s | Entry %.2f | SL %.2f | TP %.2f | Lots %.3f",
                             symbol, setup.direction, setup.entry,
                             setup.stop_loss, setup.tp1, risk.lot_size)
+
+                # Persist to trade journal
+                trade_journal.record_open(
+                    trade_id     = trade_id or f"{symbol}_{int(time.time())}",
+                    symbol       = symbol,
+                    direction    = setup.direction,
+                    entry        = setup.entry,
+                    stop_loss    = setup.stop_loss,
+                    tp1          = setup.tp1,
+                    tp2          = setup.tp2,
+                    lot_size     = risk.lot_size,
+                    risk_dollars = risk.risk_dollars,
+                    confidence   = setup.confidence,
+                    rr           = setup.rr,
+                    reasons      = setup.reasons,
+                )
+            else:
+                logger.error("%s %s: Telegram send failed", symbol, setup.direction)
 
     except Exception:
         logger.exception("Error in check_symbol(%s)", symbol)
@@ -166,20 +271,38 @@ _status_lines: list[str] = []   # collects per-symbol status each scan
 def run_checks() -> None:
     global _status_lines
     _status_lines = []
+    scan_start = time.time()
+    logger.info("=== Scan started | symbols=%s ===", config.SYMBOLS)
 
     # Close paper trades that hit SL/TP
     try:
         prices = {s: (ws_price(s) or market_data.get_current_price(s))
                   for s in config.SYMBOLS}
         prices = {k: v for k, v in prices.items() if v}
-        for closed in paper.update(prices):
+        logger.debug("Live prices: %s", {k: f"{v:,.2f}" for k, v in prices.items()})
+        closed_trades = paper.update(prices)
+        if closed_trades:
+            logger.info("Paper trades closed this scan: %d", len(closed_trades))
+        for closed in closed_trades:
+            # Update journal with outcome before sending Telegram message
+            trade_journal.record_close(
+                trade_id    = closed.id,
+                exit_price  = closed.exit_price or 0.0,
+                exit_reason = closed.exit_reason,
+                pnl         = closed.pnl,
+            )
             telegram.send_paper_closed(
-                closed.symbol, closed.direction, closed.pnl, closed.exit_reason)
+                closed.symbol, closed.direction, closed.pnl, closed.exit_reason,
+                entry=closed.entry, exit_price=closed.exit_price or 0.0,
+            )
     except Exception:
         logger.exception("Paper update error")
 
     for symbol in config.SYMBOLS:
         check_symbol(symbol)
+
+    elapsed = time.time() - scan_start
+    logger.info("=== Scan complete in %.1fs ===", elapsed)
 
 
 def send_hourly_status() -> None:

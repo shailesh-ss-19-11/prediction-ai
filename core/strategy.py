@@ -23,11 +23,14 @@ from core.smc import OrderBlock, FairValueGap, LiquiditySweep
 logger = logging.getLogger(__name__)
 
 # Minimum conditions that must pass (out of 7) to emit a signal
-# 6/7 = strong signals only
 _MIN_CONDITIONS = 6
 
-# ATR multiplier for stop-loss placement
-_SL_ATR_MULT = 1.5
+# ATR buffer placed beyond the structural swing low/high for stop-loss
+# (not the whole SL distance — just a noise buffer on top of the structure level)
+_SL_ATR_MULT = 0.5
+
+# How many 15m bars to look back for the structural swing low/high used as SL
+_SWING_SL_LOOKBACK = 10
 
 # Minimum acceptable risk-to-reward ratio
 _MIN_RR = 2.0
@@ -37,6 +40,9 @@ _VOLUME_LOOKBACK = 20
 
 # Volume spike threshold
 _VOLUME_SPIKE_MULT = 1.5
+
+# Minimum 4h trend_strength (0-1) required before accepting the structure bias
+_MIN_TREND_STRENGTH = 0.5
 
 
 # ---------------------------------------------------------------------------
@@ -65,16 +71,33 @@ class TradeSetup:
 # Helper: volume spike check
 # ---------------------------------------------------------------------------
 
-def _has_volume_spike(df_15m: Optional[pd.DataFrame]) -> bool:
-    """Return True when the most-recent volume > 1.5x mean of prior 20 bars."""
-    if df_15m is None or len(df_15m) < _VOLUME_LOOKBACK + 1:
+def _has_volume_spike(df_15m: Optional[pd.DataFrame], direction: str = "") -> bool:
+    """
+    Return True when the last COMPLETED candle has a volume spike in the trade direction.
+
+    Uses iloc[-2] (previous closed candle) — the current candle is still forming.
+    Also checks that the spike candle's close confirms direction (bearish candle for SHORT,
+    bullish candle for LONG) so a reversal-bounce spike doesn't pass for the wrong side.
+    """
+    if df_15m is None or len(df_15m) < _VOLUME_LOOKBACK + 2:
         return False
-    vol = df_15m["volume"].astype(float)
-    recent = float(vol.iloc[-1])
-    avg    = float(vol.iloc[-(  _VOLUME_LOOKBACK + 1):-1].mean())
+    vol    = df_15m["volume"].astype(float)
+    recent = float(vol.iloc[-2])
+    avg    = float(vol.iloc[-(_VOLUME_LOOKBACK + 2):-2].mean())
     if avg == 0:
         return False
-    return recent > _VOLUME_SPIKE_MULT * avg
+    if recent <= _VOLUME_SPIKE_MULT * avg:
+        return False
+
+    # Volume is high — verify the candle closed in the trade direction
+    if direction:
+        candle = df_15m.iloc[-2]
+        if direction == "LONG"  and float(candle["close"]) < float(candle["open"]):
+            return False   # spike on a bearish candle — don't use for LONG entry
+        if direction == "SHORT" and float(candle["close"]) > float(candle["open"]):
+            return False   # spike on a bullish candle — don't use for SHORT entry
+
+    return True
 
 
 # ---------------------------------------------------------------------------
@@ -292,45 +315,64 @@ class TrendStrategy:
                 f"1h EMA20 ({indicators_1h.ema_20:.4f}) > EMA50 ({indicators_1h.ema_50:.4f})"
             )
 
-        # 3. RSI between 45–65 on 15m
+        # 3. RSI 50–65 on 15m — momentum clearly bullish, not just neutral
         rsi_15m = indicators_15m.rsi_14
-        c3_ok = not math.isnan(rsi_15m) and 45.0 <= rsi_15m <= 65.0
+        c3_ok = not math.isnan(rsi_15m) and 50.0 <= rsi_15m <= 65.0
         if c3_ok:
             conditions_passed += 1
-            reasons.append(f"15m RSI {rsi_15m:.1f} in buy zone [45–65]")
+            reasons.append(f"15m RSI {rsi_15m:.1f} in buy zone [50–65]")
 
-        # 4. Bullish confirmation candle (confidence >= 0.6)
+        # 4. Bullish pattern on the PREVIOUS completed candle (iloc[-2])
+        #    Patterns on the current forming candle (iloc[-1]) are unreliable — the
+        #    candle hasn't closed yet and may not complete as that pattern.
         best_bullish_pattern: Optional[CandlePattern] = None
-        for p in patterns:
-            if p.direction == "bullish" and p.confidence >= 0.60:
-                best_bullish_pattern = p
-                break
+        if df_15m is not None and len(df_15m) >= 2:
+            from core.patterns import detect_all as _detect_all
+            confirmed_patterns = _detect_all(df_15m.iloc[:-1])   # exclude live candle
+            for p in confirmed_patterns:
+                if p.direction == "bullish" and p.confidence >= 0.60:
+                    best_bullish_pattern = p
+                    break
         c4_ok = best_bullish_pattern is not None
         if c4_ok:
             conditions_passed += 1
             reasons.append(
-                f"Bullish pattern: {best_bullish_pattern.name} "  # type: ignore[union-attr]
-                f"(conf={best_bullish_pattern.confidence:.2f})"   # type: ignore[union-attr]
+                f"Bullish pattern (confirmed): {best_bullish_pattern.name} "  # type: ignore[union-attr]
+                f"(conf={best_bullish_pattern.confidence:.2f})"               # type: ignore[union-attr]
             )
 
-        # 5. Volume spike
-        c5_ok = _has_volume_spike(df_15m)
+        # 5. Volume spike on the previous completed 15m candle — must be a bullish candle
+        c5_ok = _has_volume_spike(df_15m, direction="LONG")
         if c5_ok:
             conditions_passed += 1
-            reasons.append("Volume spike > 1.5x 20-bar average")
+            reasons.append("Bullish volume spike on last closed candle > 1.5x 20-bar avg")
 
-        # 6. Market structure bias = 'bullish' on 4h
-        bias = structure.get("bias", "ranging")
-        c6_ok = bias == "bullish"
+        # 6. 4h structure bias = 'bullish' with meaningful trend strength
+        bias     = structure.get("bias", "ranging")
+        strength = structure.get("trend_strength", 0.0)
+        c6_ok    = bias == "bullish" and strength >= _MIN_TREND_STRENGTH
         if c6_ok:
             conditions_passed += 1
-            reasons.append(f"4h structure bias: {bias}")
+            reasons.append(f"4h structure: {bias} (strength={strength:.2f})")
 
-        # 7. Not overbought (RSI < 70)
-        c7_ok = not math.isnan(rsi_15m) and rsi_15m < 70.0
+        # 7. MACD bullish on 15m — replaces the redundant 'RSI < 70' check.
+        #    Requires MACD line above signal AND histogram positive.
+        macd_line = indicators_15m.macd_line
+        macd_sig  = indicators_15m.signal_line
+        macd_hist = indicators_15m.histogram
+        c7_ok = (
+            not math.isnan(macd_line)
+            and not math.isnan(macd_sig)
+            and not math.isnan(macd_hist)
+            and macd_line > macd_sig
+            and macd_hist > 0
+        )
         if c7_ok:
             conditions_passed += 1
-            reasons.append(f"RSI {rsi_15m:.1f} < 70 (not overbought)")
+            reasons.append(
+                f"15m MACD bullish (line={macd_line:.4f} > sig={macd_sig:.4f}, "
+                f"hist={macd_hist:.4f})"
+            )
 
         if conditions_passed < _MIN_CONDITIONS:
             logger.debug(
@@ -340,10 +382,13 @@ class TrendStrategy:
             return None
 
         # ----- Entry / SL / TP calculation -----
-        current_low = _current_low(df_15m)
-        entry     = close
-        stop_loss = current_low - _SL_ATR_MULT * atr
-        risk      = entry - stop_loss
+        # Structural SL: below the lowest low of the last N bars (a real support level)
+        # plus a small ATR buffer so normal wick noise doesn't trigger it.
+        lookback   = min(_SWING_SL_LOOKBACK, len(df_15m))
+        recent_low = float(df_15m["low"].iloc[-lookback:].min())
+        entry      = close
+        stop_loss  = recent_low - _SL_ATR_MULT * atr
+        risk       = entry - stop_loss
 
         if risk <= 0:
             logger.debug("[Strategy] %s LONG: risk <= 0, skipping.", symbol)
@@ -424,45 +469,62 @@ class TrendStrategy:
                 f"1h EMA20 ({indicators_1h.ema_20:.4f}) < EMA50 ({indicators_1h.ema_50:.4f})"
             )
 
-        # 3. RSI between 35–55 on 15m
+        # 3. RSI 35–50 on 15m — momentum clearly bearish, not just neutral
         rsi_15m = indicators_15m.rsi_14
-        c3_ok = not math.isnan(rsi_15m) and 35.0 <= rsi_15m <= 55.0
+        c3_ok = not math.isnan(rsi_15m) and 35.0 <= rsi_15m <= 50.0
         if c3_ok:
             conditions_passed += 1
-            reasons.append(f"15m RSI {rsi_15m:.1f} in sell zone [35–55]")
+            reasons.append(f"15m RSI {rsi_15m:.1f} in sell zone [35–50]")
 
-        # 4. Bearish confirmation candle (confidence >= 0.6)
+        # 4. Bearish pattern on the PREVIOUS completed candle (iloc[-2])
         best_bearish_pattern: Optional[CandlePattern] = None
-        for p in patterns:
-            if p.direction == "bearish" and p.confidence >= 0.60:
-                best_bearish_pattern = p
-                break
+        if df_15m is not None and len(df_15m) >= 2:
+            from core.patterns import detect_all as _detect_all
+            confirmed_patterns = _detect_all(df_15m.iloc[:-1])   # exclude live candle
+            for p in confirmed_patterns:
+                if p.direction == "bearish" and p.confidence >= 0.60:
+                    best_bearish_pattern = p
+                    break
         c4_ok = best_bearish_pattern is not None
         if c4_ok:
             conditions_passed += 1
             reasons.append(
-                f"Bearish pattern: {best_bearish_pattern.name} "  # type: ignore[union-attr]
-                f"(conf={best_bearish_pattern.confidence:.2f})"   # type: ignore[union-attr]
+                f"Bearish pattern (confirmed): {best_bearish_pattern.name} "  # type: ignore[union-attr]
+                f"(conf={best_bearish_pattern.confidence:.2f})"               # type: ignore[union-attr]
             )
 
-        # 5. Volume spike
-        c5_ok = _has_volume_spike(df_15m)
+        # 5. Volume spike on the previous completed 15m candle — must be a bearish candle
+        c5_ok = _has_volume_spike(df_15m, direction="SHORT")
         if c5_ok:
             conditions_passed += 1
-            reasons.append("Volume spike > 1.5x 20-bar average")
+            reasons.append("Bearish volume spike on last closed candle > 1.5x 20-bar avg")
 
-        # 6. Market structure bias = 'bearish' on 4h
-        bias = structure.get("bias", "ranging")
-        c6_ok = bias == "bearish"
+        # 6. 4h structure bias = 'bearish' with meaningful trend strength
+        bias     = structure.get("bias", "ranging")
+        strength = structure.get("trend_strength", 0.0)
+        c6_ok    = bias == "bearish" and strength >= _MIN_TREND_STRENGTH
         if c6_ok:
             conditions_passed += 1
-            reasons.append(f"4h structure bias: {bias}")
+            reasons.append(f"4h structure: {bias} (strength={strength:.2f})")
 
-        # 7. Not oversold (RSI > 30)
-        c7_ok = not math.isnan(rsi_15m) and rsi_15m > 30.0
+        # 7. MACD bearish on 15m — replaces the redundant 'RSI > 30' check.
+        #    Requires MACD line below signal AND histogram negative.
+        macd_line = indicators_15m.macd_line
+        macd_sig  = indicators_15m.signal_line
+        macd_hist = indicators_15m.histogram
+        c7_ok = (
+            not math.isnan(macd_line)
+            and not math.isnan(macd_sig)
+            and not math.isnan(macd_hist)
+            and macd_line < macd_sig
+            and macd_hist < 0
+        )
         if c7_ok:
             conditions_passed += 1
-            reasons.append(f"RSI {rsi_15m:.1f} > 30 (not oversold)")
+            reasons.append(
+                f"15m MACD bearish (line={macd_line:.4f} < sig={macd_sig:.4f}, "
+                f"hist={macd_hist:.4f})"
+            )
 
         if conditions_passed < _MIN_CONDITIONS:
             logger.debug(
@@ -472,10 +534,13 @@ class TrendStrategy:
             return None
 
         # ----- Entry / SL / TP calculation -----
-        current_high = _current_high(df_15m)
-        entry     = close
-        stop_loss = current_high + _SL_ATR_MULT * atr
-        risk      = stop_loss - entry
+        # Structural SL: above the highest high of the last N bars (a real resistance level)
+        # plus a small ATR buffer so normal wick noise doesn't trigger it.
+        lookback    = min(_SWING_SL_LOOKBACK, len(df_15m))
+        recent_high = float(df_15m["high"].iloc[-lookback:].max())
+        entry       = close
+        stop_loss   = recent_high + _SL_ATR_MULT * atr
+        risk        = stop_loss - entry
 
         if risk <= 0:
             logger.debug("[Strategy] %s SHORT: risk <= 0, skipping.", symbol)

@@ -2498,3 +2498,581 @@
 2026-06-01 18:11:53 [INFO] main — XAUTUSD $4,494.38 | trend:bearish | bias:bullish | RSI:47.0 | no setup
 2026-06-01 18:11:53 [INFO] main — === Scan complete in 3.5s ===
 2026-06-01 18:11:53 [INFO] main — Running. Ctrl+C to stop.
+2026-06-01 18:12:46 [DEBUG] websocket — Sending ping
+2026-06-01 18:13:16 [DEBUG] websocket — Sending ping
+2026-06-01 18:13:46 [DEBUG] websocket — Sending ping
+2026-06-01 18:14:17 [DEBUG] websocket — Sending ping
+2026-06-01 18:14:47 [DEBUG] websocket — Sending ping
+2026-06-01 18:15:17 [DEBUG] websocket — Sending ping
+2026-06-01 18:15:47 [DEBUG] websocket — Sending ping
+2026-06-01 18:16:17 [DEBUG] websocket — Sending ping
+2026-06-01 18:16:47 [DEBUG] websocket — Sending ping
+2026-06-01 18:16:53 [DEBUG] schedule — Running job Job(interval=5, unit=minutes, do=run_checks, args=(), kwargs={})
+2026-06-01 18:16:53 [INFO] main — === Scan started | symbols=['BTCUSD', 'ETHUSD', 'XAUTUSD'] ===
+2026-06-01 18:16:53 [INFO] core.market_data — [MarketData] Fetching BTCUSD 1m (20 candles)…
+2026-06-01 18:16:53 [DEBUG] urllib3.connectionpool — Resetting dropped connection: api.india.delta.exchange
+2026-06-01 18:16:54 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1m&symbol=BTCUSD&start=1780316513&end=1780318013 HTTP/1.1" 200 None
+2026-06-01 18:16:54 [INFO] core.market_data — [MarketData] Cached 20 candles for BTCUSD 1m
+2026-06-01 18:16:54 [INFO] core.market_data — [MarketData] Fetching ETHUSD 1m (20 candles)…
+2026-06-01 18:16:54 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1m&symbol=ETHUSD&start=1780316514&end=1780318014 HTTP/1.1" 200 None
+2026-06-01 18:16:54 [INFO] core.market_data — [MarketData] Cached 20 candles for ETHUSD 1m
+2026-06-01 18:16:54 [INFO] core.market_data — [MarketData] Fetching XAUTUSD 1m (20 candles)…
+2026-06-01 18:16:54 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1m&symbol=XAUTUSD&start=1780316514&end=1780318014 HTTP/1.1" 200 None
+2026-06-01 18:16:54 [INFO] core.market_data — [MarketData] Cached 20 candles for XAUTUSD 1m
+2026-06-01 18:16:54 [DEBUG] main — Live prices: {'BTCUSD': '72,207.00', 'ETHUSD': '1,991.10', 'XAUTUSD': '4,497.93'}
+2026-06-01 18:16:54 [DEBUG] core.market_data — [MarketData] Cache hit for BTCUSD 1m
+2026-06-01 18:16:54 [DEBUG] main — BTCUSD: price $72207.00 (source=REST)
+2026-06-01 18:16:54 [DEBUG] core.market_data — [MarketData] Cache hit for BTCUSD 1m
+2026-06-01 18:16:54 [INFO] core.market_data — [MarketData] Fetching BTCUSD 5m (30 candles)…
+2026-06-01 18:16:54 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=5m&symbol=BTCUSD&start=1780307514&end=1780318014 HTTP/1.1" 200 None
+2026-06-01 18:16:54 [INFO] core.market_data — [MarketData] Cached 30 candles for BTCUSD 5m
+2026-06-01 18:16:54 [INFO] core.market_data — [MarketData] Fetching BTCUSD 15m (60 candles)…
+2026-06-01 18:16:54 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=15m&symbol=BTCUSD&start=1780259514&end=1780318014 HTTP/1.1" 200 None
+2026-06-01 18:16:54 [INFO] core.market_data — [MarketData] Cached 60 candles for BTCUSD 15m
+2026-06-01 18:16:54 [INFO] core.market_data — [MarketData] Fetching BTCUSD 1h (250 candles)…
+2026-06-01 18:16:55 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1h&symbol=BTCUSD&start=1779400014&end=1780318014 HTTP/1.1" 200 None
+2026-06-01 18:16:55 [INFO] core.market_data — [MarketData] Cached 250 candles for BTCUSD 1h
+2026-06-01 18:16:55 [INFO] core.market_data — [MarketData] Fetching BTCUSD 4h (300 candles)…
+2026-06-01 18:16:55 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=4h&symbol=BTCUSD&start=1775926015&end=1780318015 HTTP/1.1" 200 None
+2026-06-01 18:16:55 [INFO] core.market_data — [MarketData] Cached 300 candles for BTCUSD 4h
+2026-06-01 18:16:55 [INFO] core.market_data — [MarketData] Fetching BTCUSD 1d (200 candles)…
+2026-06-01 18:16:55 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1d&symbol=BTCUSD&start=1762606015&end=1780318015 HTTP/1.1" 200 None
+2026-06-01 18:16:55 [INFO] core.market_data — [MarketData] Cached 200 candles for BTCUSD 1d
+2026-06-01 18:16:55 [DEBUG] main — BTCUSD indicators — RSI15m:29.9 EMA20_1h:73173.76 EMA200_4h:76411.51 ATR:213.2748
+2026-06-01 18:16:55 [DEBUG] main — BTCUSD: 4h structure bias=bearish | patterns detected=0
+2026-06-01 18:16:55 [DEBUG] main — BTCUSD: SMC — OBs=0 FVGs=7
+2026-06-01 18:16:55 [DEBUG] core.strategy — [Strategy] BTCUSD LONG: only 0/7 conditions met.
+2026-06-01 18:16:55 [DEBUG] core.strategy — [Strategy] BTCUSD SHORT: only 4/7 conditions met.
+2026-06-01 18:16:55 [INFO] main — BTCUSD $72,207.00 | trend:bearish | bias:bearish | RSI:29.9 | no setup
+2026-06-01 18:16:55 [DEBUG] core.market_data — [MarketData] Cache hit for ETHUSD 1m
+2026-06-01 18:16:55 [DEBUG] main — ETHUSD: price $1991.10 (source=REST)
+2026-06-01 18:16:55 [DEBUG] core.market_data — [MarketData] Cache hit for ETHUSD 1m
+2026-06-01 18:16:55 [INFO] core.market_data — [MarketData] Fetching ETHUSD 5m (30 candles)…
+2026-06-01 18:16:55 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=5m&symbol=ETHUSD&start=1780307515&end=1780318015 HTTP/1.1" 200 None
+2026-06-01 18:16:55 [INFO] core.market_data — [MarketData] Cached 30 candles for ETHUSD 5m
+2026-06-01 18:16:55 [INFO] core.market_data — [MarketData] Fetching ETHUSD 15m (60 candles)…
+2026-06-01 18:16:55 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=15m&symbol=ETHUSD&start=1780259515&end=1780318015 HTTP/1.1" 200 None
+2026-06-01 18:16:55 [INFO] core.market_data — [MarketData] Cached 60 candles for ETHUSD 15m
+2026-06-01 18:16:55 [INFO] core.market_data — [MarketData] Fetching ETHUSD 1h (250 candles)…
+2026-06-01 18:16:56 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1h&symbol=ETHUSD&start=1779400015&end=1780318015 HTTP/1.1" 200 None
+2026-06-01 18:16:56 [INFO] core.market_data — [MarketData] Cached 250 candles for ETHUSD 1h
+2026-06-01 18:16:56 [INFO] core.market_data — [MarketData] Fetching ETHUSD 4h (300 candles)…
+2026-06-01 18:16:56 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=4h&symbol=ETHUSD&start=1775926016&end=1780318016 HTTP/1.1" 200 None
+2026-06-01 18:16:56 [INFO] core.market_data — [MarketData] Cached 300 candles for ETHUSD 4h
+2026-06-01 18:16:56 [INFO] core.market_data — [MarketData] Fetching ETHUSD 1d (200 candles)…
+2026-06-01 18:16:56 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1d&symbol=ETHUSD&start=1762606016&end=1780318016 HTTP/1.1" 200 None
+2026-06-01 18:16:56 [INFO] core.market_data — [MarketData] Cached 200 candles for ETHUSD 1d
+2026-06-01 18:16:56 [DEBUG] main — ETHUSD indicators — RSI15m:55.0 EMA20_1h:1996.29 EMA200_4h:2153.85 ATR:6.9312
+2026-06-01 18:16:56 [DEBUG] main — ETHUSD: 4h structure bias=bearish | patterns detected=0
+2026-06-01 18:16:56 [DEBUG] main — ETHUSD: SMC — OBs=1 FVGs=5
+2026-06-01 18:16:56 [DEBUG] core.strategy — [Strategy] ETHUSD LONG: only 3/7 conditions met.
+2026-06-01 18:16:56 [DEBUG] core.strategy — [Strategy] ETHUSD SHORT: only 3/7 conditions met.
+2026-06-01 18:16:56 [INFO] main — ETHUSD $1,991.10 | trend:bearish | bias:bearish | RSI:55.0 | no setup
+2026-06-01 18:16:56 [DEBUG] core.market_data — [MarketData] Cache hit for XAUTUSD 1m
+2026-06-01 18:16:56 [DEBUG] main — XAUTUSD: price $4497.93 (source=REST)
+2026-06-01 18:16:56 [DEBUG] core.market_data — [MarketData] Cache hit for XAUTUSD 1m
+2026-06-01 18:16:56 [INFO] core.market_data — [MarketData] Fetching XAUTUSD 5m (30 candles)…
+2026-06-01 18:16:56 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=5m&symbol=XAUTUSD&start=1780307516&end=1780318016 HTTP/1.1" 200 None
+2026-06-01 18:16:56 [INFO] core.market_data — [MarketData] Cached 30 candles for XAUTUSD 5m
+2026-06-01 18:16:56 [INFO] core.market_data — [MarketData] Fetching XAUTUSD 15m (60 candles)…
+2026-06-01 18:16:57 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=15m&symbol=XAUTUSD&start=1780259516&end=1780318016 HTTP/1.1" 200 None
+2026-06-01 18:16:57 [INFO] core.market_data — [MarketData] Cached 60 candles for XAUTUSD 15m
+2026-06-01 18:16:57 [INFO] core.market_data — [MarketData] Fetching XAUTUSD 1h (250 candles)…
+2026-06-01 18:16:57 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1h&symbol=XAUTUSD&start=1779400017&end=1780318017 HTTP/1.1" 200 None
+2026-06-01 18:16:57 [INFO] core.market_data — [MarketData] Cached 250 candles for XAUTUSD 1h
+2026-06-01 18:16:57 [INFO] core.market_data — [MarketData] Fetching XAUTUSD 4h (300 candles)…
+2026-06-01 18:16:57 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=4h&symbol=XAUTUSD&start=1775926017&end=1780318017 HTTP/1.1" 200 None
+2026-06-01 18:16:57 [INFO] core.market_data — [MarketData] Cached 271 candles for XAUTUSD 4h
+2026-06-01 18:16:57 [INFO] core.market_data — [MarketData] Fetching XAUTUSD 1d (200 candles)…
+2026-06-01 18:16:57 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1d&symbol=XAUTUSD&start=1762606017&end=1780318017 HTTP/1.1" 200 None
+2026-06-01 18:16:57 [INFO] core.market_data — [MarketData] Cached 46 candles for XAUTUSD 1d
+2026-06-01 18:16:57 [DEBUG] main — XAUTUSD indicators — RSI15m:51.0 EMA20_1h:4505.15 EMA200_4h:4579.18 ATR:6.5413
+2026-06-01 18:16:57 [DEBUG] main — XAUTUSD: 4h structure bias=bullish | patterns detected=0
+2026-06-01 18:16:57 [DEBUG] main — XAUTUSD: SMC — OBs=0 FVGs=3
+2026-06-01 18:16:57 [DEBUG] core.strategy — [Strategy] XAUTUSD LONG: only 4/7 conditions met.
+2026-06-01 18:16:57 [DEBUG] core.strategy — [Strategy] XAUTUSD SHORT: only 2/7 conditions met.
+2026-06-01 18:16:57 [INFO] main — XAUTUSD $4,497.93 | trend:bearish | bias:bullish | RSI:51.0 | no setup
+2026-06-01 18:16:57 [INFO] main — === Scan complete in 4.0s ===
+2026-06-01 18:17:17 [DEBUG] websocket — Sending ping
+2026-06-01 18:17:47 [DEBUG] websocket — Sending ping
+2026-06-01 18:18:17 [DEBUG] websocket — Sending ping
+2026-06-01 18:18:47 [DEBUG] websocket — Sending ping
+2026-06-01 18:19:17 [DEBUG] websocket — Sending ping
+2026-06-01 18:19:47 [DEBUG] websocket — Sending ping
+2026-06-01 18:20:17 [DEBUG] websocket — Sending ping
+2026-06-01 18:20:47 [DEBUG] websocket — Sending ping
+2026-06-01 18:21:17 [DEBUG] websocket — Sending ping
+2026-06-01 18:21:47 [DEBUG] websocket — Sending ping
+2026-06-01 18:21:57 [DEBUG] schedule — Running job Job(interval=5, unit=minutes, do=run_checks, args=(), kwargs={})
+2026-06-01 18:21:57 [INFO] main — === Scan started | symbols=['BTCUSD', 'ETHUSD', 'XAUTUSD'] ===
+2026-06-01 18:21:57 [INFO] core.market_data — [MarketData] Fetching BTCUSD 1m (20 candles)…
+2026-06-01 18:21:57 [DEBUG] urllib3.connectionpool — Resetting dropped connection: api.india.delta.exchange
+2026-06-01 18:21:58 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1m&symbol=BTCUSD&start=1780316817&end=1780318317 HTTP/1.1" 200 None
+2026-06-01 18:21:58 [INFO] core.market_data — [MarketData] Cached 20 candles for BTCUSD 1m
+2026-06-01 18:21:58 [INFO] core.market_data — [MarketData] Fetching ETHUSD 1m (20 candles)…
+2026-06-01 18:21:58 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1m&symbol=ETHUSD&start=1780316818&end=1780318318 HTTP/1.1" 200 None
+2026-06-01 18:21:58 [INFO] core.market_data — [MarketData] Cached 20 candles for ETHUSD 1m
+2026-06-01 18:21:58 [INFO] core.market_data — [MarketData] Fetching XAUTUSD 1m (20 candles)…
+2026-06-01 18:21:58 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1m&symbol=XAUTUSD&start=1780316818&end=1780318318 HTTP/1.1" 200 None
+2026-06-01 18:21:58 [INFO] core.market_data — [MarketData] Cached 20 candles for XAUTUSD 1m
+2026-06-01 18:21:58 [DEBUG] main — Live prices: {'BTCUSD': '72,152.50', 'ETHUSD': '1,989.15', 'XAUTUSD': '4,497.59'}
+2026-06-01 18:21:58 [DEBUG] core.market_data — [MarketData] Cache hit for BTCUSD 1m
+2026-06-01 18:21:58 [DEBUG] main — BTCUSD: price $72152.50 (source=REST)
+2026-06-01 18:21:58 [DEBUG] core.market_data — [MarketData] Cache hit for BTCUSD 1m
+2026-06-01 18:21:58 [INFO] core.market_data — [MarketData] Fetching BTCUSD 5m (30 candles)…
+2026-06-01 18:21:58 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=5m&symbol=BTCUSD&start=1780307818&end=1780318318 HTTP/1.1" 200 None
+2026-06-01 18:21:58 [INFO] core.market_data — [MarketData] Cached 30 candles for BTCUSD 5m
+2026-06-01 18:21:58 [INFO] core.market_data — [MarketData] Fetching BTCUSD 15m (60 candles)…
+2026-06-01 18:21:58 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=15m&symbol=BTCUSD&start=1780259818&end=1780318318 HTTP/1.1" 200 None
+2026-06-01 18:21:58 [INFO] core.market_data — [MarketData] Cached 60 candles for BTCUSD 15m
+2026-06-01 18:21:58 [INFO] core.market_data — [MarketData] Fetching BTCUSD 1h (250 candles)…
+2026-06-01 18:21:59 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1h&symbol=BTCUSD&start=1779400318&end=1780318318 HTTP/1.1" 200 None
+2026-06-01 18:21:59 [INFO] core.market_data — [MarketData] Cached 250 candles for BTCUSD 1h
+2026-06-01 18:21:59 [INFO] core.market_data — [MarketData] Fetching BTCUSD 4h (300 candles)…
+2026-06-01 18:21:59 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=4h&symbol=BTCUSD&start=1775926319&end=1780318319 HTTP/1.1" 200 None
+2026-06-01 18:21:59 [INFO] core.market_data — [MarketData] Cached 300 candles for BTCUSD 4h
+2026-06-01 18:21:59 [INFO] core.market_data — [MarketData] Fetching BTCUSD 1d (200 candles)…
+2026-06-01 18:21:59 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1d&symbol=BTCUSD&start=1762606319&end=1780318319 HTTP/1.1" 200 None
+2026-06-01 18:21:59 [INFO] core.market_data — [MarketData] Cached 200 candles for BTCUSD 1d
+2026-06-01 18:21:59 [DEBUG] main — BTCUSD indicators — RSI15m:28.8 EMA20_1h:73161.52 EMA200_4h:76410.51 ATR:221.3819
+2026-06-01 18:21:59 [DEBUG] main — BTCUSD: 4h structure bias=bearish | patterns detected=0
+2026-06-01 18:21:59 [DEBUG] main — BTCUSD: SMC — OBs=0 FVGs=7
+2026-06-01 18:21:59 [DEBUG] core.strategy — [Strategy] BTCUSD LONG: only 0/7 conditions met.
+2026-06-01 18:21:59 [DEBUG] core.strategy — [Strategy] BTCUSD SHORT: only 4/7 conditions met.
+2026-06-01 18:21:59 [INFO] main — BTCUSD $72,152.50 | trend:bearish | bias:bearish | RSI:28.8 | no setup
+2026-06-01 18:21:59 [DEBUG] core.market_data — [MarketData] Cache hit for ETHUSD 1m
+2026-06-01 18:21:59 [DEBUG] main — ETHUSD: price $1989.15 (source=REST)
+2026-06-01 18:21:59 [DEBUG] core.market_data — [MarketData] Cache hit for ETHUSD 1m
+2026-06-01 18:21:59 [INFO] core.market_data — [MarketData] Fetching ETHUSD 5m (30 candles)…
+2026-06-01 18:21:59 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=5m&symbol=ETHUSD&start=1780307819&end=1780318319 HTTP/1.1" 200 None
+2026-06-01 18:21:59 [INFO] core.market_data — [MarketData] Cached 30 candles for ETHUSD 5m
+2026-06-01 18:21:59 [INFO] core.market_data — [MarketData] Fetching ETHUSD 15m (60 candles)…
+2026-06-01 18:22:00 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=15m&symbol=ETHUSD&start=1780259819&end=1780318319 HTTP/1.1" 200 None
+2026-06-01 18:22:00 [INFO] core.market_data — [MarketData] Cached 60 candles for ETHUSD 15m
+2026-06-01 18:22:00 [INFO] core.market_data — [MarketData] Fetching ETHUSD 1h (250 candles)…
+2026-06-01 18:22:00 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1h&symbol=ETHUSD&start=1779400320&end=1780318320 HTTP/1.1" 200 None
+2026-06-01 18:22:00 [INFO] core.market_data — [MarketData] Cached 250 candles for ETHUSD 1h
+2026-06-01 18:22:00 [INFO] core.market_data — [MarketData] Fetching ETHUSD 4h (300 candles)…
+2026-06-01 18:22:00 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=4h&symbol=ETHUSD&start=1775926320&end=1780318320 HTTP/1.1" 200 None
+2026-06-01 18:22:00 [INFO] core.market_data — [MarketData] Cached 300 candles for ETHUSD 4h
+2026-06-01 18:22:00 [INFO] core.market_data — [MarketData] Fetching ETHUSD 1d (200 candles)…
+2026-06-01 18:22:01 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1d&symbol=ETHUSD&start=1762606320&end=1780318320 HTTP/1.1" 200 None
+2026-06-01 18:22:01 [INFO] core.market_data — [MarketData] Cached 200 candles for ETHUSD 1d
+2026-06-01 18:22:01 [DEBUG] main — ETHUSD indicators — RSI15m:52.7 EMA20_1h:1996.10 EMA200_4h:2153.84 ATR:7.1312
+2026-06-01 18:22:01 [DEBUG] main — ETHUSD: 4h structure bias=bearish | patterns detected=0
+2026-06-01 18:22:01 [DEBUG] main — ETHUSD: SMC — OBs=1 FVGs=5
+2026-06-01 18:22:01 [DEBUG] core.strategy — [Strategy] ETHUSD LONG: only 3/7 conditions met.
+2026-06-01 18:22:01 [DEBUG] core.strategy — [Strategy] ETHUSD SHORT: only 3/7 conditions met.
+2026-06-01 18:22:01 [INFO] main — ETHUSD $1,989.15 | trend:bearish | bias:bearish | RSI:52.7 | no setup
+2026-06-01 18:22:01 [DEBUG] core.market_data — [MarketData] Cache hit for XAUTUSD 1m
+2026-06-01 18:22:01 [DEBUG] main — XAUTUSD: price $4497.59 (source=REST)
+2026-06-01 18:22:01 [DEBUG] core.market_data — [MarketData] Cache hit for XAUTUSD 1m
+2026-06-01 18:22:01 [INFO] core.market_data — [MarketData] Fetching XAUTUSD 5m (30 candles)…
+2026-06-01 18:22:01 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=5m&symbol=XAUTUSD&start=1780307821&end=1780318321 HTTP/1.1" 200 None
+2026-06-01 18:22:01 [INFO] core.market_data — [MarketData] Cached 30 candles for XAUTUSD 5m
+2026-06-01 18:22:01 [INFO] core.market_data — [MarketData] Fetching XAUTUSD 15m (60 candles)…
+2026-06-01 18:22:01 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=15m&symbol=XAUTUSD&start=1780259821&end=1780318321 HTTP/1.1" 200 None
+2026-06-01 18:22:01 [INFO] core.market_data — [MarketData] Cached 60 candles for XAUTUSD 15m
+2026-06-01 18:22:01 [INFO] core.market_data — [MarketData] Fetching XAUTUSD 1h (250 candles)…
+2026-06-01 18:22:01 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1h&symbol=XAUTUSD&start=1779400321&end=1780318321 HTTP/1.1" 200 None
+2026-06-01 18:22:01 [INFO] core.market_data — [MarketData] Cached 250 candles for XAUTUSD 1h
+2026-06-01 18:22:01 [INFO] core.market_data — [MarketData] Fetching XAUTUSD 4h (300 candles)…
+2026-06-01 18:22:01 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=4h&symbol=XAUTUSD&start=1775926321&end=1780318321 HTTP/1.1" 200 None
+2026-06-01 18:22:01 [INFO] core.market_data — [MarketData] Cached 271 candles for XAUTUSD 4h
+2026-06-01 18:22:01 [INFO] core.market_data — [MarketData] Fetching XAUTUSD 1d (200 candles)…
+2026-06-01 18:22:02 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1d&symbol=XAUTUSD&start=1762606321&end=1780318321 HTTP/1.1" 200 None
+2026-06-01 18:22:02 [INFO] core.market_data — [MarketData] Cached 46 candles for XAUTUSD 1d
+2026-06-01 18:22:02 [DEBUG] main — XAUTUSD indicators — RSI15m:50.6 EMA20_1h:4505.04 EMA200_4h:4579.24 ATR:6.6099
+2026-06-01 18:22:02 [DEBUG] main — XAUTUSD: 4h structure bias=bullish | patterns detected=0
+2026-06-01 18:22:02 [DEBUG] main — XAUTUSD: SMC — OBs=0 FVGs=3
+2026-06-01 18:22:02 [DEBUG] core.strategy — [Strategy] XAUTUSD LONG: only 4/7 conditions met.
+2026-06-01 18:22:02 [DEBUG] core.strategy — [Strategy] XAUTUSD SHORT: only 2/7 conditions met.
+2026-06-01 18:22:02 [INFO] main — XAUTUSD $4,497.59 | trend:bearish | bias:bullish | RSI:50.6 | no setup
+2026-06-01 18:22:02 [INFO] main — === Scan complete in 4.4s ===
+2026-06-01 18:22:17 [DEBUG] websocket — Sending ping
+2026-06-01 18:22:47 [DEBUG] websocket — Sending ping
+2026-06-01 18:23:17 [DEBUG] websocket — Sending ping
+2026-06-01 18:23:47 [DEBUG] websocket — Sending ping
+2026-06-01 18:24:17 [DEBUG] websocket — Sending ping
+2026-06-01 18:24:47 [DEBUG] websocket — Sending ping
+2026-06-01 18:25:17 [DEBUG] websocket — Sending ping
+2026-06-01 18:25:47 [DEBUG] websocket — Sending ping
+2026-06-01 18:26:17 [DEBUG] websocket — Sending ping
+2026-06-01 18:26:47 [DEBUG] websocket — Sending ping
+2026-06-01 18:27:02 [DEBUG] schedule — Running job Job(interval=5, unit=minutes, do=run_checks, args=(), kwargs={})
+2026-06-01 18:27:02 [INFO] main — === Scan started | symbols=['BTCUSD', 'ETHUSD', 'XAUTUSD'] ===
+2026-06-01 18:27:02 [INFO] core.market_data — [MarketData] Fetching BTCUSD 1m (20 candles)…
+2026-06-01 18:27:02 [DEBUG] urllib3.connectionpool — Resetting dropped connection: api.india.delta.exchange
+2026-06-01 18:27:02 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1m&symbol=BTCUSD&start=1780317122&end=1780318622 HTTP/1.1" 200 None
+2026-06-01 18:27:02 [INFO] core.market_data — [MarketData] Cached 20 candles for BTCUSD 1m
+2026-06-01 18:27:02 [INFO] core.market_data — [MarketData] Fetching ETHUSD 1m (20 candles)…
+2026-06-01 18:27:03 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1m&symbol=ETHUSD&start=1780317122&end=1780318622 HTTP/1.1" 200 None
+2026-06-01 18:27:03 [INFO] core.market_data — [MarketData] Cached 20 candles for ETHUSD 1m
+2026-06-01 18:27:03 [INFO] core.market_data — [MarketData] Fetching XAUTUSD 1m (20 candles)…
+2026-06-01 18:27:03 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1m&symbol=XAUTUSD&start=1780317123&end=1780318623 HTTP/1.1" 200 None
+2026-06-01 18:27:03 [INFO] core.market_data — [MarketData] Cached 20 candles for XAUTUSD 1m
+2026-06-01 18:27:03 [DEBUG] main — Live prices: {'BTCUSD': '72,175.50', 'ETHUSD': '1,989.00', 'XAUTUSD': '4,494.20'}
+2026-06-01 18:27:03 [DEBUG] core.market_data — [MarketData] Cache hit for BTCUSD 1m
+2026-06-01 18:27:03 [DEBUG] main — BTCUSD: price $72175.50 (source=REST)
+2026-06-01 18:27:03 [DEBUG] core.market_data — [MarketData] Cache hit for BTCUSD 1m
+2026-06-01 18:27:03 [INFO] core.market_data — [MarketData] Fetching BTCUSD 5m (30 candles)…
+2026-06-01 18:27:03 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=5m&symbol=BTCUSD&start=1780308123&end=1780318623 HTTP/1.1" 200 None
+2026-06-01 18:27:03 [INFO] core.market_data — [MarketData] Cached 30 candles for BTCUSD 5m
+2026-06-01 18:27:03 [INFO] core.market_data — [MarketData] Fetching BTCUSD 15m (60 candles)…
+2026-06-01 18:27:03 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=15m&symbol=BTCUSD&start=1780260123&end=1780318623 HTTP/1.1" 200 None
+2026-06-01 18:27:03 [INFO] core.market_data — [MarketData] Cached 60 candles for BTCUSD 15m
+2026-06-01 18:27:03 [INFO] core.market_data — [MarketData] Fetching BTCUSD 1h (250 candles)…
+2026-06-01 18:27:04 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1h&symbol=BTCUSD&start=1779400623&end=1780318623 HTTP/1.1" 200 None
+2026-06-01 18:27:04 [INFO] core.market_data — [MarketData] Cached 250 candles for BTCUSD 1h
+2026-06-01 18:27:04 [INFO] core.market_data — [MarketData] Fetching BTCUSD 4h (300 candles)…
+2026-06-01 18:27:04 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=4h&symbol=BTCUSD&start=1775926624&end=1780318624 HTTP/1.1" 200 None
+2026-06-01 18:27:04 [INFO] core.market_data — [MarketData] Cached 300 candles for BTCUSD 4h
+2026-06-01 18:27:04 [INFO] core.market_data — [MarketData] Fetching BTCUSD 1d (200 candles)…
+2026-06-01 18:27:04 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1d&symbol=BTCUSD&start=1762606624&end=1780318624 HTTP/1.1" 200 None
+2026-06-01 18:27:04 [INFO] core.market_data — [MarketData] Cached 200 candles for BTCUSD 1d
+2026-06-01 18:27:04 [DEBUG] main — BTCUSD indicators — RSI15m:28.4 EMA20_1h:73160.38 EMA200_4h:76410.92 ATR:221.3819
+2026-06-01 18:27:04 [DEBUG] main — BTCUSD: 4h structure bias=bearish | patterns detected=0
+2026-06-01 18:27:04 [DEBUG] main — BTCUSD: SMC — OBs=0 FVGs=7
+2026-06-01 18:27:04 [DEBUG] core.strategy — [Strategy] BTCUSD LONG: only 0/7 conditions met.
+2026-06-01 18:27:04 [DEBUG] core.strategy — [Strategy] BTCUSD SHORT: only 4/7 conditions met.
+2026-06-01 18:27:04 [INFO] main — BTCUSD $72,175.50 | trend:bearish | bias:bearish | RSI:28.4 | no setup
+2026-06-01 18:27:04 [DEBUG] core.market_data — [MarketData] Cache hit for ETHUSD 1m
+2026-06-01 18:27:04 [DEBUG] main — ETHUSD: price $1989.00 (source=REST)
+2026-06-01 18:27:04 [DEBUG] core.market_data — [MarketData] Cache hit for ETHUSD 1m
+2026-06-01 18:27:04 [INFO] core.market_data — [MarketData] Fetching ETHUSD 5m (30 candles)…
+2026-06-01 18:27:04 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=5m&symbol=ETHUSD&start=1780308124&end=1780318624 HTTP/1.1" 200 None
+2026-06-01 18:27:04 [INFO] core.market_data — [MarketData] Cached 30 candles for ETHUSD 5m
+2026-06-01 18:27:04 [INFO] core.market_data — [MarketData] Fetching ETHUSD 15m (60 candles)…
+2026-06-01 18:27:05 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=15m&symbol=ETHUSD&start=1780260124&end=1780318624 HTTP/1.1" 200 None
+2026-06-01 18:27:05 [INFO] core.market_data — [MarketData] Cached 60 candles for ETHUSD 15m
+2026-06-01 18:27:05 [INFO] core.market_data — [MarketData] Fetching ETHUSD 1h (250 candles)…
+2026-06-01 18:27:05 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1h&symbol=ETHUSD&start=1779400625&end=1780318625 HTTP/1.1" 200 None
+2026-06-01 18:27:05 [INFO] core.market_data — [MarketData] Cached 250 candles for ETHUSD 1h
+2026-06-01 18:27:05 [INFO] core.market_data — [MarketData] Fetching ETHUSD 4h (300 candles)…
+2026-06-01 18:27:05 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=4h&symbol=ETHUSD&start=1775926625&end=1780318625 HTTP/1.1" 200 None
+2026-06-01 18:27:05 [INFO] core.market_data — [MarketData] Cached 300 candles for ETHUSD 4h
+2026-06-01 18:27:05 [INFO] core.market_data — [MarketData] Fetching ETHUSD 1d (200 candles)…
+2026-06-01 18:27:05 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1d&symbol=ETHUSD&start=1762606625&end=1780318625 HTTP/1.1" 200 None
+2026-06-01 18:27:05 [INFO] core.market_data — [MarketData] Cached 200 candles for ETHUSD 1d
+2026-06-01 18:27:05 [DEBUG] main — ETHUSD indicators — RSI15m:51.4 EMA20_1h:1995.82 EMA200_4h:2153.82 ATR:7.2777
+2026-06-01 18:27:05 [DEBUG] main — ETHUSD: 4h structure bias=bearish | patterns detected=0
+2026-06-01 18:27:05 [DEBUG] main — ETHUSD: SMC — OBs=1 FVGs=4
+2026-06-01 18:27:05 [DEBUG] core.strategy — [Strategy] ETHUSD LONG: only 3/7 conditions met.
+2026-06-01 18:27:05 [DEBUG] core.strategy — [Strategy] ETHUSD SHORT: only 3/7 conditions met.
+2026-06-01 18:27:05 [INFO] main — ETHUSD $1,989.00 | trend:bearish | bias:bearish | RSI:51.4 | no setup
+2026-06-01 18:27:05 [DEBUG] core.market_data — [MarketData] Cache hit for XAUTUSD 1m
+2026-06-01 18:27:05 [DEBUG] main — XAUTUSD: price $4494.20 (source=REST)
+2026-06-01 18:27:05 [DEBUG] core.market_data — [MarketData] Cache hit for XAUTUSD 1m
+2026-06-01 18:27:05 [INFO] core.market_data — [MarketData] Fetching XAUTUSD 5m (30 candles)…
+2026-06-01 18:27:05 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=5m&symbol=XAUTUSD&start=1780308125&end=1780318625 HTTP/1.1" 200 None
+2026-06-01 18:27:05 [INFO] core.market_data — [MarketData] Cached 30 candles for XAUTUSD 5m
+2026-06-01 18:27:05 [INFO] core.market_data — [MarketData] Fetching XAUTUSD 15m (60 candles)…
+2026-06-01 18:27:06 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=15m&symbol=XAUTUSD&start=1780260125&end=1780318625 HTTP/1.1" 200 None
+2026-06-01 18:27:06 [INFO] core.market_data — [MarketData] Cached 60 candles for XAUTUSD 15m
+2026-06-01 18:27:06 [INFO] core.market_data — [MarketData] Fetching XAUTUSD 1h (250 candles)…
+2026-06-01 18:27:06 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1h&symbol=XAUTUSD&start=1779400626&end=1780318626 HTTP/1.1" 200 None
+2026-06-01 18:27:06 [INFO] core.market_data — [MarketData] Cached 250 candles for XAUTUSD 1h
+2026-06-01 18:27:06 [INFO] core.market_data — [MarketData] Fetching XAUTUSD 4h (300 candles)…
+2026-06-01 18:27:06 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=4h&symbol=XAUTUSD&start=1775926626&end=1780318626 HTTP/1.1" 200 None
+2026-06-01 18:27:06 [INFO] core.market_data — [MarketData] Cached 271 candles for XAUTUSD 4h
+2026-06-01 18:27:06 [INFO] core.market_data — [MarketData] Fetching XAUTUSD 1d (200 candles)…
+2026-06-01 18:27:06 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1d&symbol=XAUTUSD&start=1762606626&end=1780318626 HTTP/1.1" 200 None
+2026-06-01 18:27:06 [INFO] core.market_data — [MarketData] Cached 46 candles for XAUTUSD 1d
+2026-06-01 18:27:06 [DEBUG] main — XAUTUSD indicators — RSI15m:46.7 EMA20_1h:4504.91 EMA200_4h:4579.24 ATR:6.7885
+2026-06-01 18:27:06 [DEBUG] main — XAUTUSD: 4h structure bias=bullish | patterns detected=0
+2026-06-01 18:27:06 [DEBUG] main — XAUTUSD: SMC — OBs=0 FVGs=3
+2026-06-01 18:27:06 [DEBUG] core.strategy — [Strategy] XAUTUSD LONG: only 3/7 conditions met.
+2026-06-01 18:27:06 [DEBUG] core.strategy — [Strategy] XAUTUSD SHORT: only 3/7 conditions met.
+2026-06-01 18:27:06 [INFO] main — XAUTUSD $4,494.20 | trend:bearish | bias:bullish | RSI:46.7 | no setup
+2026-06-01 18:27:06 [INFO] main — === Scan complete in 4.5s ===
+2026-06-01 18:27:17 [DEBUG] websocket — Sending ping
+2026-06-01 18:27:47 [DEBUG] websocket — Sending ping
+2026-06-01 18:28:17 [DEBUG] websocket — Sending ping
+2026-06-01 18:28:47 [DEBUG] websocket — Sending ping
+2026-06-01 18:29:17 [DEBUG] websocket — Sending ping
+2026-06-01 18:29:47 [DEBUG] websocket — Sending ping
+2026-06-01 18:30:17 [DEBUG] websocket — Sending ping
+2026-06-01 18:30:47 [DEBUG] websocket — Sending ping
+2026-06-01 18:31:17 [DEBUG] websocket — Sending ping
+2026-06-01 18:31:47 [DEBUG] websocket — Sending ping
+2026-06-01 18:32:06 [DEBUG] schedule — Running job Job(interval=5, unit=minutes, do=run_checks, args=(), kwargs={})
+2026-06-01 18:32:06 [INFO] main — === Scan started | symbols=['BTCUSD', 'ETHUSD', 'XAUTUSD'] ===
+2026-06-01 18:32:06 [INFO] core.market_data — [MarketData] Fetching BTCUSD 1m (20 candles)…
+2026-06-01 18:32:06 [DEBUG] urllib3.connectionpool — Resetting dropped connection: api.india.delta.exchange
+2026-06-01 18:32:07 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1m&symbol=BTCUSD&start=1780317426&end=1780318926 HTTP/1.1" 200 None
+2026-06-01 18:32:07 [INFO] core.market_data — [MarketData] Cached 20 candles for BTCUSD 1m
+2026-06-01 18:32:07 [INFO] core.market_data — [MarketData] Fetching ETHUSD 1m (20 candles)…
+2026-06-01 18:32:07 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1m&symbol=ETHUSD&start=1780317427&end=1780318927 HTTP/1.1" 200 None
+2026-06-01 18:32:07 [INFO] core.market_data — [MarketData] Cached 20 candles for ETHUSD 1m
+2026-06-01 18:32:07 [INFO] core.market_data — [MarketData] Fetching XAUTUSD 1m (20 candles)…
+2026-06-01 18:32:07 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1m&symbol=XAUTUSD&start=1780317427&end=1780318927 HTTP/1.1" 200 None
+2026-06-01 18:32:07 [INFO] core.market_data — [MarketData] Cached 20 candles for XAUTUSD 1m
+2026-06-01 18:32:07 [DEBUG] main — Live prices: {'BTCUSD': '72,165.00', 'ETHUSD': '1,986.60', 'XAUTUSD': '4,493.94'}
+2026-06-01 18:32:07 [DEBUG] core.market_data — [MarketData] Cache hit for BTCUSD 1m
+2026-06-01 18:32:07 [DEBUG] main — BTCUSD: price $72165.00 (source=REST)
+2026-06-01 18:32:07 [DEBUG] core.market_data — [MarketData] Cache hit for BTCUSD 1m
+2026-06-01 18:32:07 [INFO] core.market_data — [MarketData] Fetching BTCUSD 5m (30 candles)…
+2026-06-01 18:32:07 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=5m&symbol=BTCUSD&start=1780308427&end=1780318927 HTTP/1.1" 200 None
+2026-06-01 18:32:07 [INFO] core.market_data — [MarketData] Cached 30 candles for BTCUSD 5m
+2026-06-01 18:32:07 [INFO] core.market_data — [MarketData] Fetching BTCUSD 15m (60 candles)…
+2026-06-01 18:32:07 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=15m&symbol=BTCUSD&start=1780260427&end=1780318927 HTTP/1.1" 200 None
+2026-06-01 18:32:07 [INFO] core.market_data — [MarketData] Cached 60 candles for BTCUSD 15m
+2026-06-01 18:32:07 [INFO] core.market_data — [MarketData] Fetching BTCUSD 1h (250 candles)…
+2026-06-01 18:32:08 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1h&symbol=BTCUSD&start=1779400927&end=1780318927 HTTP/1.1" 200 None
+2026-06-01 18:32:08 [INFO] core.market_data — [MarketData] Cached 250 candles for BTCUSD 1h
+2026-06-01 18:32:08 [INFO] core.market_data — [MarketData] Fetching BTCUSD 4h (300 candles)…
+2026-06-01 18:32:08 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=4h&symbol=BTCUSD&start=1775926928&end=1780318928 HTTP/1.1" 200 None
+2026-06-01 18:32:08 [INFO] core.market_data — [MarketData] Cached 300 candles for BTCUSD 4h
+2026-06-01 18:32:08 [INFO] core.market_data — [MarketData] Fetching BTCUSD 1d (200 candles)…
+2026-06-01 18:32:08 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1d&symbol=BTCUSD&start=1762606928&end=1780318928 HTTP/1.1" 200 None
+2026-06-01 18:32:08 [INFO] core.market_data — [MarketData] Cached 200 candles for BTCUSD 1d
+2026-06-01 18:32:08 [DEBUG] main — BTCUSD indicators — RSI15m:30.2 EMA20_1h:73166.67 EMA200_4h:76410.95 ATR:207.9232
+2026-06-01 18:32:08 [DEBUG] main — BTCUSD: volatility state = low
+2026-06-01 18:32:08 [DEBUG] main — BTCUSD: 4h structure bias=bearish | patterns detected=2
+2026-06-01 18:32:08 [DEBUG] main — BTCUSD: SMC — OBs=0 FVGs=7
+2026-06-01 18:32:08 [DEBUG] core.strategy — [Strategy] BTCUSD LONG: only 0/7 conditions met.
+2026-06-01 18:32:08 [DEBUG] core.strategy — [Strategy] BTCUSD SHORT: only 4/7 conditions met.
+2026-06-01 18:32:08 [INFO] main — BTCUSD $72,165.00 | trend:bearish | bias:bearish | RSI:30.2 | no setup
+2026-06-01 18:32:08 [DEBUG] core.market_data — [MarketData] Cache hit for ETHUSD 1m
+2026-06-01 18:32:08 [DEBUG] main — ETHUSD: price $1986.60 (source=REST)
+2026-06-01 18:32:08 [DEBUG] core.market_data — [MarketData] Cache hit for ETHUSD 1m
+2026-06-01 18:32:08 [INFO] core.market_data — [MarketData] Fetching ETHUSD 5m (30 candles)…
+2026-06-01 18:32:08 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=5m&symbol=ETHUSD&start=1780308428&end=1780318928 HTTP/1.1" 200 None
+2026-06-01 18:32:08 [INFO] core.market_data — [MarketData] Cached 30 candles for ETHUSD 5m
+2026-06-01 18:32:08 [INFO] core.market_data — [MarketData] Fetching ETHUSD 15m (60 candles)…
+2026-06-01 18:32:08 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=15m&symbol=ETHUSD&start=1780260428&end=1780318928 HTTP/1.1" 200 None
+2026-06-01 18:32:08 [INFO] core.market_data — [MarketData] Cached 60 candles for ETHUSD 15m
+2026-06-01 18:32:08 [INFO] core.market_data — [MarketData] Fetching ETHUSD 1h (250 candles)…
+2026-06-01 18:32:09 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1h&symbol=ETHUSD&start=1779400928&end=1780318928 HTTP/1.1" 200 None
+2026-06-01 18:32:09 [INFO] core.market_data — [MarketData] Cached 250 candles for ETHUSD 1h
+2026-06-01 18:32:09 [INFO] core.market_data — [MarketData] Fetching ETHUSD 4h (300 candles)…
+2026-06-01 18:32:09 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=4h&symbol=ETHUSD&start=1775926929&end=1780318929 HTTP/1.1" 200 None
+2026-06-01 18:32:09 [INFO] core.market_data — [MarketData] Cached 300 candles for ETHUSD 4h
+2026-06-01 18:32:09 [INFO] core.market_data — [MarketData] Fetching ETHUSD 1d (200 candles)…
+2026-06-01 18:32:09 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1d&symbol=ETHUSD&start=1762606929&end=1780318929 HTTP/1.1" 200 None
+2026-06-01 18:32:09 [INFO] core.market_data — [MarketData] Cached 200 candles for ETHUSD 1d
+2026-06-01 18:32:09 [DEBUG] main — ETHUSD indicators — RSI15m:53.0 EMA20_1h:1995.87 EMA200_4h:2153.83 ATR:6.8262
+2026-06-01 18:32:09 [DEBUG] main — ETHUSD: volatility state = low
+2026-06-01 18:32:09 [DEBUG] main — ETHUSD: 4h structure bias=bearish | patterns detected=2
+2026-06-01 18:32:09 [DEBUG] main — ETHUSD: SMC — OBs=1 FVGs=4
+2026-06-01 18:32:09 [DEBUG] core.strategy — [Strategy] ETHUSD LONG: only 2/7 conditions met.
+2026-06-01 18:32:09 [DEBUG] core.strategy — [Strategy] ETHUSD SHORT: only 3/7 conditions met.
+2026-06-01 18:32:09 [INFO] main — ETHUSD $1,986.60 | trend:bearish | bias:bearish | RSI:53.0 | no setup
+2026-06-01 18:32:09 [DEBUG] core.market_data — [MarketData] Cache hit for XAUTUSD 1m
+2026-06-01 18:32:09 [DEBUG] main — XAUTUSD: price $4493.94 (source=REST)
+2026-06-01 18:32:09 [DEBUG] core.market_data — [MarketData] Cache hit for XAUTUSD 1m
+2026-06-01 18:32:09 [INFO] core.market_data — [MarketData] Fetching XAUTUSD 5m (30 candles)…
+2026-06-01 18:32:09 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=5m&symbol=XAUTUSD&start=1780308429&end=1780318929 HTTP/1.1" 200 None
+2026-06-01 18:32:09 [INFO] core.market_data — [MarketData] Cached 30 candles for XAUTUSD 5m
+2026-06-01 18:32:09 [INFO] core.market_data — [MarketData] Fetching XAUTUSD 15m (60 candles)…
+2026-06-01 18:32:09 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=15m&symbol=XAUTUSD&start=1780260429&end=1780318929 HTTP/1.1" 200 None
+2026-06-01 18:32:09 [INFO] core.market_data — [MarketData] Cached 60 candles for XAUTUSD 15m
+2026-06-01 18:32:09 [INFO] core.market_data — [MarketData] Fetching XAUTUSD 1h (250 candles)…
+2026-06-01 18:32:09 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1h&symbol=XAUTUSD&start=1779400929&end=1780318929 HTTP/1.1" 200 None
+2026-06-01 18:32:09 [INFO] core.market_data — [MarketData] Cached 250 candles for XAUTUSD 1h
+2026-06-01 18:32:09 [INFO] core.market_data — [MarketData] Fetching XAUTUSD 4h (300 candles)…
+2026-06-01 18:32:10 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=4h&symbol=XAUTUSD&start=1775926929&end=1780318929 HTTP/1.1" 200 None
+2026-06-01 18:32:10 [INFO] core.market_data — [MarketData] Cached 271 candles for XAUTUSD 4h
+2026-06-01 18:32:10 [INFO] core.market_data — [MarketData] Fetching XAUTUSD 1d (200 candles)…
+2026-06-01 18:32:10 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1d&symbol=XAUTUSD&start=1762606930&end=1780318930 HTTP/1.1" 200 None
+2026-06-01 18:32:10 [INFO] core.market_data — [MarketData] Cached 46 candles for XAUTUSD 1d
+2026-06-01 18:32:10 [DEBUG] main — XAUTUSD indicators — RSI15m:47.5 EMA20_1h:4504.54 EMA200_4h:4579.21 ATR:6.5997
+2026-06-01 18:32:10 [DEBUG] main — XAUTUSD: 4h structure bias=bullish | patterns detected=0
+2026-06-01 18:32:10 [DEBUG] main — XAUTUSD: SMC — OBs=1 FVGs=3
+2026-06-01 18:32:10 [DEBUG] core.strategy — [Strategy] XAUTUSD LONG: only 2/7 conditions met.
+2026-06-01 18:32:10 [DEBUG] core.strategy — [Strategy] XAUTUSD SHORT: only 3/7 conditions met.
+2026-06-01 18:32:10 [INFO] main — XAUTUSD $4,493.94 | trend:bearish | bias:bullish | RSI:47.5 | no setup
+2026-06-01 18:32:10 [INFO] main — === Scan complete in 3.6s ===
+2026-06-01 18:32:17 [DEBUG] websocket — Sending ping
+2026-06-01 18:32:47 [DEBUG] websocket — Sending ping
+2026-06-01 18:33:17 [DEBUG] websocket — Sending ping
+2026-06-01 18:33:47 [DEBUG] websocket — Sending ping
+2026-06-01 18:34:17 [DEBUG] websocket — Sending ping
+2026-06-01 18:34:47 [DEBUG] websocket — Sending ping
+2026-06-01 18:35:17 [DEBUG] websocket — Sending ping
+2026-06-01 18:35:47 [DEBUG] websocket — Sending ping
+2026-06-01 18:36:17 [DEBUG] websocket — Sending ping
+2026-06-01 18:36:47 [DEBUG] websocket — Sending ping
+2026-06-01 18:37:10 [DEBUG] schedule — Running job Job(interval=5, unit=minutes, do=run_checks, args=(), kwargs={})
+2026-06-01 18:37:10 [INFO] main — === Scan started | symbols=['BTCUSD', 'ETHUSD', 'XAUTUSD'] ===
+2026-06-01 18:37:10 [INFO] core.market_data — [MarketData] Fetching BTCUSD 1m (20 candles)…
+2026-06-01 18:37:10 [DEBUG] urllib3.connectionpool — Resetting dropped connection: api.india.delta.exchange
+2026-06-01 18:37:10 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1m&symbol=BTCUSD&start=1780317730&end=1780319230 HTTP/1.1" 200 None
+2026-06-01 18:37:10 [INFO] core.market_data — [MarketData] Cached 20 candles for BTCUSD 1m
+2026-06-01 18:37:10 [INFO] core.market_data — [MarketData] Fetching ETHUSD 1m (20 candles)…
+2026-06-01 18:37:10 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1m&symbol=ETHUSD&start=1780317730&end=1780319230 HTTP/1.1" 200 None
+2026-06-01 18:37:10 [INFO] core.market_data — [MarketData] Cached 20 candles for ETHUSD 1m
+2026-06-01 18:37:10 [INFO] core.market_data — [MarketData] Fetching XAUTUSD 1m (20 candles)…
+2026-06-01 18:37:10 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1m&symbol=XAUTUSD&start=1780317730&end=1780319230 HTTP/1.1" 200 None
+2026-06-01 18:37:10 [INFO] core.market_data — [MarketData] Cached 20 candles for XAUTUSD 1m
+2026-06-01 18:37:10 [DEBUG] main — Live prices: {'BTCUSD': '72,007.50', 'ETHUSD': '1,983.00', 'XAUTUSD': '4,488.73'}
+2026-06-01 18:37:10 [DEBUG] core.market_data — [MarketData] Cache hit for BTCUSD 1m
+2026-06-01 18:37:11 [DEBUG] main — BTCUSD: price $72007.50 (source=REST)
+2026-06-01 18:37:11 [DEBUG] core.market_data — [MarketData] Cache hit for BTCUSD 1m
+2026-06-01 18:37:11 [INFO] core.market_data — [MarketData] Fetching BTCUSD 5m (30 candles)…
+2026-06-01 18:37:11 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=5m&symbol=BTCUSD&start=1780308731&end=1780319231 HTTP/1.1" 200 None
+2026-06-01 18:37:11 [INFO] core.market_data — [MarketData] Cached 30 candles for BTCUSD 5m
+2026-06-01 18:37:11 [INFO] core.market_data — [MarketData] Fetching BTCUSD 15m (60 candles)…
+2026-06-01 18:37:11 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=15m&symbol=BTCUSD&start=1780260731&end=1780319231 HTTP/1.1" 200 None
+2026-06-01 18:37:11 [INFO] core.market_data — [MarketData] Cached 60 candles for BTCUSD 15m
+2026-06-01 18:37:11 [INFO] core.market_data — [MarketData] Fetching BTCUSD 1h (250 candles)…
+2026-06-01 18:37:11 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1h&symbol=BTCUSD&start=1779401231&end=1780319231 HTTP/1.1" 200 None
+2026-06-01 18:37:11 [INFO] core.market_data — [MarketData] Cached 250 candles for BTCUSD 1h
+2026-06-01 18:37:11 [INFO] core.market_data — [MarketData] Fetching BTCUSD 4h (300 candles)…
+2026-06-01 18:37:11 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=4h&symbol=BTCUSD&start=1775927231&end=1780319231 HTTP/1.1" 200 None
+2026-06-01 18:37:11 [INFO] core.market_data — [MarketData] Cached 300 candles for BTCUSD 4h
+2026-06-01 18:37:11 [INFO] core.market_data — [MarketData] Fetching BTCUSD 1d (200 candles)…
+2026-06-01 18:37:11 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1d&symbol=BTCUSD&start=1762607231&end=1780319231 HTTP/1.1" 200 None
+2026-06-01 18:37:11 [INFO] core.market_data — [MarketData] Cached 200 candles for BTCUSD 1d
+2026-06-01 18:37:11 [DEBUG] main — BTCUSD indicators — RSI15m:26.2 EMA20_1h:73056.52 EMA200_4h:76409.18 ATR:221.8160
+2026-06-01 18:37:12 [DEBUG] main — BTCUSD: 4h structure bias=bearish | patterns detected=1
+2026-06-01 18:37:12 [DEBUG] main — BTCUSD: SMC — OBs=0 FVGs=7
+2026-06-01 18:37:12 [DEBUG] core.strategy — [Strategy] BTCUSD LONG: only 0/7 conditions met.
+2026-06-01 18:37:12 [DEBUG] core.strategy — [Strategy] BTCUSD SHORT: only 4/7 conditions met.
+2026-06-01 18:37:12 [INFO] main — BTCUSD $72,007.50 | trend:bearish | bias:bearish | RSI:26.2 | no setup
+2026-06-01 18:37:12 [DEBUG] core.market_data — [MarketData] Cache hit for ETHUSD 1m
+2026-06-01 18:37:12 [DEBUG] main — ETHUSD: price $1983.00 (source=REST)
+2026-06-01 18:37:12 [DEBUG] core.market_data — [MarketData] Cache hit for ETHUSD 1m
+2026-06-01 18:37:12 [INFO] core.market_data — [MarketData] Fetching ETHUSD 5m (30 candles)…
+2026-06-01 18:37:12 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=5m&symbol=ETHUSD&start=1780308732&end=1780319232 HTTP/1.1" 200 None
+2026-06-01 18:37:12 [INFO] core.market_data — [MarketData] Cached 30 candles for ETHUSD 5m
+2026-06-01 18:37:12 [INFO] core.market_data — [MarketData] Fetching ETHUSD 15m (60 candles)…
+2026-06-01 18:37:12 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=15m&symbol=ETHUSD&start=1780260732&end=1780319232 HTTP/1.1" 200 None
+2026-06-01 18:37:12 [INFO] core.market_data — [MarketData] Cached 60 candles for ETHUSD 15m
+2026-06-01 18:37:12 [INFO] core.market_data — [MarketData] Fetching ETHUSD 1h (250 candles)…
+2026-06-01 18:37:12 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1h&symbol=ETHUSD&start=1779401232&end=1780319232 HTTP/1.1" 200 None
+2026-06-01 18:37:12 [INFO] core.market_data — [MarketData] Cached 250 candles for ETHUSD 1h
+2026-06-01 18:37:12 [INFO] core.market_data — [MarketData] Fetching ETHUSD 4h (300 candles)…
+2026-06-01 18:37:12 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=4h&symbol=ETHUSD&start=1775927232&end=1780319232 HTTP/1.1" 200 None
+2026-06-01 18:37:12 [INFO] core.market_data — [MarketData] Cached 300 candles for ETHUSD 4h
+2026-06-01 18:37:12 [INFO] core.market_data — [MarketData] Fetching ETHUSD 1d (200 candles)…
+2026-06-01 18:37:12 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1d&symbol=ETHUSD&start=1762607232&end=1780319232 HTTP/1.1" 200 None
+2026-06-01 18:37:12 [INFO] core.market_data — [MarketData] Cached 200 candles for ETHUSD 1d
+2026-06-01 18:37:12 [DEBUG] main — ETHUSD indicators — RSI15m:46.4 EMA20_1h:1994.67 EMA200_4h:2153.77 ATR:7.2512
+2026-06-01 18:37:12 [DEBUG] main — ETHUSD: 4h structure bias=bearish | patterns detected=0
+2026-06-01 18:37:12 [DEBUG] main — ETHUSD: SMC — OBs=1 FVGs=4
+2026-06-01 18:37:12 [DEBUG] core.strategy — [Strategy] ETHUSD LONG: only 1/7 conditions met.
+2026-06-01 18:37:12 [DEBUG] core.strategy — [Strategy] ETHUSD SHORT: only 4/7 conditions met.
+2026-06-01 18:37:12 [INFO] main — ETHUSD $1,983.00 | trend:bearish | bias:bearish | RSI:46.4 | no setup
+2026-06-01 18:37:12 [DEBUG] core.market_data — [MarketData] Cache hit for XAUTUSD 1m
+2026-06-01 18:37:12 [DEBUG] main — XAUTUSD: price $4488.73 (source=REST)
+2026-06-01 18:37:12 [DEBUG] core.market_data — [MarketData] Cache hit for XAUTUSD 1m
+2026-06-01 18:37:12 [INFO] core.market_data — [MarketData] Fetching XAUTUSD 5m (30 candles)…
+2026-06-01 18:37:13 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=5m&symbol=XAUTUSD&start=1780308732&end=1780319232 HTTP/1.1" 200 None
+2026-06-01 18:37:13 [INFO] core.market_data — [MarketData] Cached 30 candles for XAUTUSD 5m
+2026-06-01 18:37:13 [INFO] core.market_data — [MarketData] Fetching XAUTUSD 15m (60 candles)…
+2026-06-01 18:37:13 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=15m&symbol=XAUTUSD&start=1780260733&end=1780319233 HTTP/1.1" 200 None
+2026-06-01 18:37:13 [INFO] core.market_data — [MarketData] Cached 60 candles for XAUTUSD 15m
+2026-06-01 18:37:13 [INFO] core.market_data — [MarketData] Fetching XAUTUSD 1h (250 candles)…
+2026-06-01 18:37:13 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1h&symbol=XAUTUSD&start=1779401233&end=1780319233 HTTP/1.1" 200 None
+2026-06-01 18:37:13 [INFO] core.market_data — [MarketData] Cached 250 candles for XAUTUSD 1h
+2026-06-01 18:37:13 [INFO] core.market_data — [MarketData] Fetching XAUTUSD 4h (300 candles)…
+2026-06-01 18:37:13 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=4h&symbol=XAUTUSD&start=1775927233&end=1780319233 HTTP/1.1" 200 None
+2026-06-01 18:37:13 [INFO] core.market_data — [MarketData] Cached 271 candles for XAUTUSD 4h
+2026-06-01 18:37:13 [INFO] core.market_data — [MarketData] Fetching XAUTUSD 1d (200 candles)…
+2026-06-01 18:37:13 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1d&symbol=XAUTUSD&start=1762607233&end=1780319233 HTTP/1.1" 200 None
+2026-06-01 18:37:13 [INFO] core.market_data — [MarketData] Cached 46 candles for XAUTUSD 1d
+2026-06-01 18:37:13 [DEBUG] main — XAUTUSD indicators — RSI15m:40.9 EMA20_1h:4503.44 EMA200_4h:4579.19 ATR:6.8554
+2026-06-01 18:37:13 [DEBUG] main — XAUTUSD: 4h structure bias=bullish | patterns detected=0
+2026-06-01 18:37:13 [DEBUG] main — XAUTUSD: SMC — OBs=1 FVGs=3
+2026-06-01 18:37:13 [DEBUG] core.strategy — [Strategy] XAUTUSD LONG: only 2/7 conditions met.
+2026-06-01 18:37:13 [DEBUG] core.strategy — [Strategy] XAUTUSD SHORT: only 3/7 conditions met.
+2026-06-01 18:37:13 [INFO] main — XAUTUSD $4,488.73 | trend:bearish | bias:bullish | RSI:40.9 | no setup
+2026-06-01 18:37:13 [INFO] main — === Scan complete in 3.5s ===
+2026-06-01 18:37:17 [DEBUG] websocket — Sending ping
+2026-06-01 18:37:47 [DEBUG] websocket — Sending ping
+2026-06-01 18:38:17 [DEBUG] websocket — Sending ping
+2026-06-01 18:38:47 [DEBUG] websocket — Sending ping
+2026-06-01 18:39:17 [DEBUG] websocket — Sending ping
+2026-06-01 18:39:47 [DEBUG] websocket — Sending ping
+2026-06-01 18:40:17 [DEBUG] websocket — Sending ping
+2026-06-01 18:40:47 [DEBUG] websocket — Sending ping
+2026-06-01 18:41:17 [DEBUG] websocket — Sending ping
+2026-06-01 18:41:47 [DEBUG] websocket — Sending ping
+2026-06-01 18:42:13 [DEBUG] schedule — Running job Job(interval=5, unit=minutes, do=run_checks, args=(), kwargs={})
+2026-06-01 18:42:13 [INFO] main — === Scan started | symbols=['BTCUSD', 'ETHUSD', 'XAUTUSD'] ===
+2026-06-01 18:42:13 [INFO] core.market_data — [MarketData] Fetching BTCUSD 1m (20 candles)…
+2026-06-01 18:42:13 [DEBUG] urllib3.connectionpool — Resetting dropped connection: api.india.delta.exchange
+2026-06-01 18:42:14 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1m&symbol=BTCUSD&start=1780318033&end=1780319533 HTTP/1.1" 200 None
+2026-06-01 18:42:14 [INFO] core.market_data — [MarketData] Cached 20 candles for BTCUSD 1m
+2026-06-01 18:42:14 [INFO] core.market_data — [MarketData] Fetching ETHUSD 1m (20 candles)…
+2026-06-01 18:42:14 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1m&symbol=ETHUSD&start=1780318034&end=1780319534 HTTP/1.1" 200 None
+2026-06-01 18:42:14 [INFO] core.market_data — [MarketData] Cached 20 candles for ETHUSD 1m
+2026-06-01 18:42:14 [INFO] core.market_data — [MarketData] Fetching XAUTUSD 1m (20 candles)…
+2026-06-01 18:42:15 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1m&symbol=XAUTUSD&start=1780318034&end=1780319534 HTTP/1.1" 200 None
+2026-06-01 18:42:15 [INFO] core.market_data — [MarketData] Cached 20 candles for XAUTUSD 1m
+2026-06-01 18:42:15 [DEBUG] main — Live prices: {'BTCUSD': '71,839.00', 'ETHUSD': '1,974.95', 'XAUTUSD': '4,478.00'}
+2026-06-01 18:42:15 [DEBUG] core.market_data — [MarketData] Cache hit for BTCUSD 1m
+2026-06-01 18:42:15 [DEBUG] main — BTCUSD: price $71839.00 (source=REST)
+2026-06-01 18:42:15 [DEBUG] core.market_data — [MarketData] Cache hit for BTCUSD 1m
+2026-06-01 18:42:15 [INFO] core.market_data — [MarketData] Fetching BTCUSD 5m (30 candles)…
+2026-06-01 18:42:15 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=5m&symbol=BTCUSD&start=1780309035&end=1780319535 HTTP/1.1" 200 None
+2026-06-01 18:42:15 [INFO] core.market_data — [MarketData] Cached 30 candles for BTCUSD 5m
+2026-06-01 18:42:15 [INFO] core.market_data — [MarketData] Fetching BTCUSD 15m (60 candles)…
+2026-06-01 18:42:15 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=15m&symbol=BTCUSD&start=1780261035&end=1780319535 HTTP/1.1" 200 None
+2026-06-01 18:42:15 [INFO] core.market_data — [MarketData] Cached 60 candles for BTCUSD 15m
+2026-06-01 18:42:15 [INFO] core.market_data — [MarketData] Fetching BTCUSD 1h (250 candles)…
+2026-06-01 18:42:15 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1h&symbol=BTCUSD&start=1779401535&end=1780319535 HTTP/1.1" 200 None
+2026-06-01 18:42:15 [INFO] core.market_data — [MarketData] Cached 250 candles for BTCUSD 1h
+2026-06-01 18:42:15 [INFO] core.market_data — [MarketData] Fetching BTCUSD 4h (300 candles)…
+2026-06-01 18:42:15 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=4h&symbol=BTCUSD&start=1775927535&end=1780319535 HTTP/1.1" 200 None
+2026-06-01 18:42:15 [INFO] core.market_data — [MarketData] Cached 300 candles for BTCUSD 4h
+2026-06-01 18:42:15 [INFO] core.market_data — [MarketData] Fetching BTCUSD 1d (200 candles)…
+2026-06-01 18:42:15 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1d&symbol=BTCUSD&start=1762607535&end=1780319535 HTTP/1.1" 200 None
+2026-06-01 18:42:15 [INFO] core.market_data — [MarketData] Cached 200 candles for BTCUSD 1d
+2026-06-01 18:42:16 [DEBUG] main — BTCUSD indicators — RSI15m:23.6 EMA20_1h:73046.76 EMA200_4h:76409.04 ATR:233.8874
+2026-06-01 18:42:16 [DEBUG] main — BTCUSD: 4h structure bias=bearish | patterns detected=1
+2026-06-01 18:42:16 [DEBUG] main — BTCUSD: SMC — OBs=0 FVGs=7
+2026-06-01 18:42:16 [DEBUG] core.strategy — [Strategy] BTCUSD LONG: only 0/7 conditions met.
+2026-06-01 18:42:16 [DEBUG] core.strategy — [Strategy] BTCUSD SHORT: only 4/7 conditions met.
+2026-06-01 18:42:16 [INFO] main — BTCUSD $71,839.00 | trend:bearish | bias:bearish | RSI:23.6 | no setup
+2026-06-01 18:42:16 [DEBUG] core.market_data — [MarketData] Cache hit for ETHUSD 1m
+2026-06-01 18:42:16 [DEBUG] main — ETHUSD: price $1974.95 (source=REST)
+2026-06-01 18:42:16 [DEBUG] core.market_data — [MarketData] Cache hit for ETHUSD 1m
+2026-06-01 18:42:16 [INFO] core.market_data — [MarketData] Fetching ETHUSD 5m (30 candles)…
+2026-06-01 18:42:16 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=5m&symbol=ETHUSD&start=1780309036&end=1780319536 HTTP/1.1" 200 None
+2026-06-01 18:42:16 [INFO] core.market_data — [MarketData] Cached 30 candles for ETHUSD 5m
+2026-06-01 18:42:16 [INFO] core.market_data — [MarketData] Fetching ETHUSD 15m (60 candles)…
+2026-06-01 18:42:16 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=15m&symbol=ETHUSD&start=1780261036&end=1780319536 HTTP/1.1" 200 None
+2026-06-01 18:42:16 [INFO] core.market_data — [MarketData] Cached 60 candles for ETHUSD 15m
+2026-06-01 18:42:16 [INFO] core.market_data — [MarketData] Fetching ETHUSD 1h (250 candles)…
+2026-06-01 18:42:16 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1h&symbol=ETHUSD&start=1779401536&end=1780319536 HTTP/1.1" 200 None
+2026-06-01 18:42:16 [INFO] core.market_data — [MarketData] Cached 250 candles for ETHUSD 1h
+2026-06-01 18:42:16 [INFO] core.market_data — [MarketData] Fetching ETHUSD 4h (300 candles)…
+2026-06-01 18:42:16 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=4h&symbol=ETHUSD&start=1775927536&end=1780319536 HTTP/1.1" 200 None
+2026-06-01 18:42:16 [INFO] core.market_data — [MarketData] Cached 300 candles for ETHUSD 4h
+2026-06-01 18:42:16 [INFO] core.market_data — [MarketData] Fetching ETHUSD 1d (200 candles)…
+2026-06-01 18:42:16 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1d&symbol=ETHUSD&start=1762607536&end=1780319536 HTTP/1.1" 200 None
+2026-06-01 18:42:16 [INFO] core.market_data — [MarketData] Cached 200 candles for ETHUSD 1d
+2026-06-01 18:42:16 [DEBUG] main — ETHUSD indicators — RSI15m:39.9 EMA20_1h:1994.34 EMA200_4h:2153.76 ATR:7.8619
+2026-06-01 18:42:16 [DEBUG] main — ETHUSD: 4h structure bias=bearish | patterns detected=0
+2026-06-01 18:42:16 [DEBUG] main — ETHUSD: SMC — OBs=1 FVGs=4
+2026-06-01 18:42:16 [DEBUG] core.strategy — [Strategy] ETHUSD LONG: only 1/7 conditions met.
+2026-06-01 18:42:16 [DEBUG] core.strategy — [Strategy] ETHUSD SHORT: only 4/7 conditions met.
+2026-06-01 18:42:16 [INFO] main — ETHUSD $1,974.95 | trend:bearish | bias:bearish | RSI:39.9 | no setup
+2026-06-01 18:42:16 [DEBUG] core.market_data — [MarketData] Cache hit for XAUTUSD 1m
+2026-06-01 18:42:16 [DEBUG] main — XAUTUSD: price $4478.00 (source=REST)
+2026-06-01 18:42:16 [DEBUG] core.market_data — [MarketData] Cache hit for XAUTUSD 1m
+2026-06-01 18:42:16 [INFO] core.market_data — [MarketData] Fetching XAUTUSD 5m (30 candles)…
+2026-06-01 18:42:17 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=5m&symbol=XAUTUSD&start=1780309036&end=1780319536 HTTP/1.1" 200 None
+2026-06-01 18:42:17 [INFO] core.market_data — [MarketData] Cached 30 candles for XAUTUSD 5m
+2026-06-01 18:42:17 [INFO] core.market_data — [MarketData] Fetching XAUTUSD 15m (60 candles)…
+2026-06-01 18:42:17 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=15m&symbol=XAUTUSD&start=1780261037&end=1780319537 HTTP/1.1" 200 None
+2026-06-01 18:42:17 [INFO] core.market_data — [MarketData] Cached 60 candles for XAUTUSD 15m
+2026-06-01 18:42:17 [INFO] core.market_data — [MarketData] Fetching XAUTUSD 1h (250 candles)…
+2026-06-01 18:42:17 [DEBUG] websocket — Sending ping
+2026-06-01 18:42:17 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1h&symbol=XAUTUSD&start=1779401537&end=1780319537 HTTP/1.1" 200 None
+2026-06-01 18:42:17 [INFO] core.market_data — [MarketData] Cached 250 candles for XAUTUSD 1h
+2026-06-01 18:42:17 [INFO] core.market_data — [MarketData] Fetching XAUTUSD 4h (300 candles)…
+2026-06-01 18:42:17 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=4h&symbol=XAUTUSD&start=1775927537&end=1780319537 HTTP/1.1" 200 None
+2026-06-01 18:42:17 [INFO] core.market_data — [MarketData] Cached 271 candles for XAUTUSD 4h
+2026-06-01 18:42:17 [INFO] core.market_data — [MarketData] Fetching XAUTUSD 1d (200 candles)…
+2026-06-01 18:42:17 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1d&symbol=XAUTUSD&start=1762607537&end=1780319537 HTTP/1.1" 200 None
+2026-06-01 18:42:17 [INFO] core.market_data — [MarketData] Cached 46 candles for XAUTUSD 1d
+2026-06-01 18:42:17 [DEBUG] main — XAUTUSD indicators — RSI15m:32.8 EMA20_1h:4503.02 EMA200_4h:4579.20 ATR:7.8261
+2026-06-01 18:42:17 [DEBUG] main — XAUTUSD: 4h structure bias=bullish | patterns detected=0
+2026-06-01 18:42:17 [DEBUG] main — XAUTUSD: SMC — OBs=1 FVGs=3
+2026-06-01 18:42:17 [DEBUG] core.strategy — [Strategy] XAUTUSD LONG: only 1/7 conditions met.
+2026-06-01 18:42:17 [DEBUG] core.strategy — [Strategy] XAUTUSD SHORT: only 3/7 conditions met.
+2026-06-01 18:42:17 [INFO] main — XAUTUSD $4,478.00 | trend:bearish | bias:bullish | RSI:32.8 | no setup
+2026-06-01 18:42:17 [INFO] main — === Scan complete in 4.0s ===

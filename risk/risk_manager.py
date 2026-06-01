@@ -111,16 +111,21 @@ class RiskManager:
         direction: str,
         atr: float,
         multiplier: float = 1.5,
+        min_sl_pct: float = 0.008,
     ) -> float:
         """
-        Calculate an ATR-based stop-loss price.
+        Calculate a stop-loss price that satisfies three constraints:
+          1. Beyond the recent structural swing low/high (10-bar lookback).
+          2. At least ``multiplier`` × ATR from entry (default 1.5×).
+          3. At least ``min_sl_pct`` % from entry (default 0.8% — crypto floor).
 
         Parameters
         ----------
         df         : OHLCV DataFrame; last row is the signal candle.
         direction  : 'LONG' or 'SHORT'.
-        atr        : Current ATR value.
-        multiplier : ATR multiplier (default 1.5×).
+        atr        : Current ATR value (14-period recommended).
+        multiplier : ATR multiplier for minimum distance (default 1.5×).
+        min_sl_pct : Minimum SL distance as fraction of entry (default 0.008).
 
         Returns
         -------
@@ -130,24 +135,28 @@ class RiskManager:
             logger.warning("[RiskManager] Empty DataFrame in calculate_dynamic_sl.")
             return 0.0
 
-        last = df.iloc[-1]
+        entry = float(df.iloc[-1]["close"])
         direction_upper = direction.upper()
 
         if direction_upper == "LONG":
-            # Place SL below the recent swing low
-            swing_low = df["low"].tail(5).min()
-            sl = swing_low - (atr * multiplier)
+            swing_low  = float(df["low"].tail(10).min())
+            struct_sl  = swing_low  - 0.2 * atr             # buffer below pivot
+            atr_sl     = entry - (atr * multiplier)         # 1.5× ATR minimum
+            pct_sl     = entry * (1.0 - min_sl_pct)         # 0.8% minimum
+            sl = min(struct_sl, atr_sl, pct_sl)             # widest (lowest) wins
         elif direction_upper == "SHORT":
-            # Place SL above the recent swing high
-            swing_high = df["high"].tail(5).max()
-            sl = swing_high + (atr * multiplier)
+            swing_high = float(df["high"].tail(10).max())
+            struct_sl  = swing_high + 0.2 * atr             # buffer above pivot
+            atr_sl     = entry + (atr * multiplier)         # 1.5× ATR minimum
+            pct_sl     = entry * (1.0 + min_sl_pct)         # 0.8% minimum
+            sl = max(struct_sl, atr_sl, pct_sl)             # widest (highest) wins
         else:
             logger.error("[RiskManager] Unknown direction '%s'.", direction)
             return 0.0
 
         logger.debug(
-            "[RiskManager] Dynamic SL=%.4f for %s (ATR=%.4f, mult=%.1f)",
-            sl, direction_upper, atr, multiplier,
+            "[RiskManager] Dynamic SL=%.4f for %s (entry=%.4f, ATR=%.4f, mult=%.1f)",
+            sl, direction_upper, entry, atr, multiplier,
         )
         return round(sl, 6)
 

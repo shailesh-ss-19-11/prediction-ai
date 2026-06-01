@@ -169,10 +169,10 @@ def check_symbol(symbol: str) -> None:
         ob_list = detect_order_blocks(df_15m)
         fvg_list = detect_fair_value_gaps(df_15m)
         smc_data  = {
-            "order_blocks": ob_list,
-            "fvg":          fvg_list,
-            "sweeps":       detect_liquidity_sweeps(df_15m, []),
-            "zones":        get_institutional_zones(ob_list, fvg_list),
+            "order_blocks":     ob_list,
+            "fair_value_gaps":  fvg_list,          # key must match strategy.py
+            "liquidity_sweeps": detect_liquidity_sweeps(df_15m, []),  # ditto
+            "zones":            get_institutional_zones(ob_list, fvg_list),
         }
         logger.debug("%s: SMC — OBs=%d FVGs=%d",
                      symbol, len(ob_list), len(fvg_list))

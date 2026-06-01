@@ -17,6 +17,7 @@ import numpy as np
 import pandas as pd
 
 from core.indicators import IndicatorResult
+from core.market_structure import find_swing_points
 from core.patterns import CandlePattern
 from core.smc import OrderBlock, FairValueGap, LiquiditySweep
 
@@ -25,12 +26,19 @@ logger = logging.getLogger(__name__)
 # Minimum conditions that must pass (out of 7) to emit a signal
 _MIN_CONDITIONS = 6
 
-# ATR buffer placed beyond the structural swing low/high for stop-loss
-# (not the whole SL distance — just a noise buffer on top of the structure level)
-_SL_ATR_MULT = 0.5
+# ATR multiplier for the minimum SL distance from entry AND for the buffer
+# placed below/above the structural swing point.
+_SL_ATR_MULT = 1.5
 
-# How many 15m bars to look back for the structural swing low/high used as SL
-_SWING_SL_LOOKBACK = 10
+# Minimum SL distance as a fraction of entry price (0.8% floor for crypto).
+_MIN_SL_PCT = 0.008
+
+# Price must be within this fraction of a key swing level to allow entry.
+# Trades fired from the middle of a range are blocked.
+_PROXIMITY_FILTER_PCT = 0.005
+
+# How many 15m bars to look back for the structural swing low/high used as SL.
+_SWING_SL_LOOKBACK = 20
 
 # Minimum acceptable risk-to-reward ratio
 _MIN_RR = 2.0
@@ -129,6 +137,60 @@ def _current_low(df_15m: Optional[pd.DataFrame]) -> float:
     if df_15m is None or df_15m.empty:
         return float("nan")
     return float(df_15m["low"].iloc[-1])
+
+
+# ---------------------------------------------------------------------------
+# Helper: structural swing low / high for SL placement
+# ---------------------------------------------------------------------------
+
+def _nearest_swing_low(df: pd.DataFrame, entry: float, atr: float) -> float:
+    """
+    Return the highest swing low that is strictly below entry.
+    Falls back to entry - 1.5×ATR if no qualifying swing low is found.
+    Uses the last 50 bars with a 5-bar pivot lookback.
+    """
+    if df is None or len(df) < 11:
+        return entry - _SL_ATR_MULT * atr
+    window = df.iloc[-50:] if len(df) >= 50 else df
+    swing_pts = find_swing_points(window, lookback=5)
+    candidates = [sp.price for sp in swing_pts
+                  if sp.swing_type in ("low", "HL", "LL") and sp.price < entry]
+    if candidates:
+        return max(candidates)  # nearest (highest) valid swing low below entry
+    return entry - _SL_ATR_MULT * atr
+
+
+def _nearest_swing_high(df: pd.DataFrame, entry: float, atr: float) -> float:
+    """
+    Return the lowest swing high that is strictly above entry.
+    Falls back to entry + 1.5×ATR if no qualifying swing high is found.
+    Uses the last 50 bars with a 5-bar pivot lookback.
+    """
+    if df is None or len(df) < 11:
+        return entry + _SL_ATR_MULT * atr
+    window = df.iloc[-50:] if len(df) >= 50 else df
+    swing_pts = find_swing_points(window, lookback=5)
+    candidates = [sp.price for sp in swing_pts
+                  if sp.swing_type in ("high", "HH", "LH") and sp.price > entry]
+    if candidates:
+        return min(candidates)  # nearest (lowest) valid swing high above entry
+    return entry + _SL_ATR_MULT * atr
+
+
+def _is_price_near_key_level(df: pd.DataFrame, entry: float) -> bool:
+    """
+    Return True only when the current price is within _PROXIMITY_FILTER_PCT
+    of at least one structural swing point (support or resistance).
+    Trades from the middle of a range return False.
+    """
+    if df is None or len(df) < 11:
+        return False
+    window = df.iloc[-50:] if len(df) >= 50 else df
+    swing_pts = find_swing_points(window, lookback=5)
+    for sp in swing_pts:
+        if abs(entry - sp.price) / entry <= _PROXIMITY_FILTER_PCT:
+            return True
+    return False
 
 
 # ---------------------------------------------------------------------------
@@ -381,14 +443,28 @@ class TrendStrategy:
             )
             return None
 
+        # Pre-trade proximity filter: skip trades fired from the middle of a range.
+        if not _is_price_near_key_level(df_15m, close):
+            logger.debug(
+                "[Strategy] %s LONG: price %.4f not within %.1f%% of a key level — skipping.",
+                symbol, close, _PROXIMITY_FILTER_PCT * 100,
+            )
+            return None
+
         # ----- Entry / SL / TP calculation -----
-        # Structural SL: below the lowest low of the last N bars (a real support level)
-        # plus a small ATR buffer so normal wick noise doesn't trigger it.
-        lookback   = min(_SWING_SL_LOOKBACK, len(df_15m))
-        recent_low = float(df_15m["low"].iloc[-lookback:].min())
-        entry      = close
-        stop_loss  = recent_low - _SL_ATR_MULT * atr
-        risk       = entry - stop_loss
+        #
+        # Three constraints — SL is the LOWEST (farthest from entry) of all three:
+        #   1. Below the nearest structural swing low  (a real pivot, not raw rolling min)
+        #   2. At least 1.5× ATR below entry           (volatility minimum)
+        #   3. At least 0.8% below entry               (crypto price floor)
+        #
+        entry       = close
+        swing_low   = _nearest_swing_low(df_15m, entry, atr)
+        struct_sl   = swing_low - 0.2 * atr          # small buffer below the pivot
+        atr_sl      = entry - _SL_ATR_MULT * atr     # 1.5× ATR below entry
+        pct_sl      = entry * (1.0 - _MIN_SL_PCT)    # 0.8% below entry
+        stop_loss   = min(struct_sl, atr_sl, pct_sl) # widest (lowest) wins
+        risk        = entry - stop_loss
 
         if risk <= 0:
             logger.debug("[Strategy] %s LONG: risk <= 0, skipping.", symbol)
@@ -533,13 +609,27 @@ class TrendStrategy:
             )
             return None
 
+        # Pre-trade proximity filter: skip trades fired from the middle of a range.
+        if not _is_price_near_key_level(df_15m, close):
+            logger.debug(
+                "[Strategy] %s SHORT: price %.4f not within %.1f%% of a key level — skipping.",
+                symbol, close, _PROXIMITY_FILTER_PCT * 100,
+            )
+            return None
+
         # ----- Entry / SL / TP calculation -----
-        # Structural SL: above the highest high of the last N bars (a real resistance level)
-        # plus a small ATR buffer so normal wick noise doesn't trigger it.
-        lookback    = min(_SWING_SL_LOOKBACK, len(df_15m))
-        recent_high = float(df_15m["high"].iloc[-lookback:].max())
+        #
+        # Three constraints — SL is the HIGHEST (farthest from entry) of all three:
+        #   1. Above the nearest structural swing high (a real pivot, not raw rolling max)
+        #   2. At least 1.5× ATR above entry           (volatility minimum)
+        #   3. At least 0.8% above entry               (crypto price floor)
+        #
         entry       = close
-        stop_loss   = recent_high + _SL_ATR_MULT * atr
+        swing_high  = _nearest_swing_high(df_15m, entry, atr)
+        struct_sl   = swing_high + 0.2 * atr          # small buffer above the pivot
+        atr_sl      = entry + _SL_ATR_MULT * atr      # 1.5× ATR above entry
+        pct_sl      = entry * (1.0 + _MIN_SL_PCT)     # 0.8% above entry
+        stop_loss   = max(struct_sl, atr_sl, pct_sl)  # widest (highest) wins
         risk        = stop_loss - entry
 
         if risk <= 0:

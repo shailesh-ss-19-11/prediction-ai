@@ -107,6 +107,51 @@ def _mark(key: str) -> None:
 # Per-symbol check
 # ---------------------------------------------------------------------------
 
+def _place_live_order(symbol: str, setup, risk) -> None:
+    """Place a limit entry order on Delta Exchange when AUTO_TRADE is enabled."""
+    try:
+        side = "buy" if setup.direction == "LONG" else "sell"
+
+        # Delta Exchange India uses integer contract counts (1 contract = 1 USD notional).
+        # Cap at MAX_CONTRACTS_PER_TRADE to limit real-money exposure.
+        contracts = min(
+            max(1, round(risk.lot_size * setup.entry)),
+            config.MAX_CONTRACTS_PER_TRADE,
+        )
+
+        order = exchange.place_order(
+            symbol     = symbol,
+            side       = side,
+            order_type = "limit",
+            amount     = contracts,
+            price      = setup.entry,
+        )
+
+        logger.info(
+            "LIVE ORDER PLACED: %s %s | id=%s | entry=%.2f | contracts=%d | sl=%.2f | tp1=%.2f",
+            symbol, setup.direction, order.order_id, setup.entry, contracts,
+            setup.stop_loss, setup.tp1,
+        )
+
+        telegram.send_text(
+            f"✅ <b>Order Placed — Delta Exchange</b>\n"
+            f"<b>{symbol} {setup.direction}</b>\n"
+            f"├ Order ID: <code>{order.order_id}</code>\n"
+            f"├ Entry:    <b>${setup.entry:,.2f}</b> (limit)\n"
+            f"├ SL:       ${setup.stop_loss:,.2f}\n"
+            f"├ TP1:      ${setup.tp1:,.2f}\n"
+            f"├ TP2:      ${setup.tp2:,.2f}\n"
+            f"└ Size:     {contracts} contracts"
+        )
+
+    except Exception:
+        logger.exception("AUTO_TRADE order failed for %s %s", symbol, setup.direction)
+        telegram.send_text(
+            f"⚠️ <b>Auto-order FAILED</b> — {symbol} {setup.direction}\n"
+            f"Place manually at ${setup.entry:,.2f}"
+        )
+
+
 def check_symbol(symbol: str) -> None:
     try:
         # Block trading during Asian session (00:00–07:00 UTC) — low liquidity,
@@ -239,6 +284,10 @@ def check_symbol(symbol: str) -> None:
                 logger.info("SIGNAL SENT: %s %s | Entry %.2f | SL %.2f | TP %.2f | Lots %.3f",
                             symbol, setup.direction, setup.entry,
                             setup.stop_loss, setup.tp1, risk.lot_size)
+
+                # Auto-execute limit order on Delta Exchange
+                if config.AUTO_TRADE and not config.PAPER_TRADING_MODE and config.DELTA_API_KEY:
+                    _place_live_order(symbol, setup, risk)
 
                 # Persist to trade journal
                 trade_journal.record_open(

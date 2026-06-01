@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 
 import schedule
 
+import api as api_server
 import config
 import trade_journal
 from exchanges.delta_exchange import DeltaExchange
@@ -330,6 +331,9 @@ def main() -> None:
     if "--setup" in sys.argv:
         print("Fill config.py then run: python main.py")
         sys.exit(0)
+
+    # Start REST API server in background thread
+    api_server.start_api_thread(paper)
 
     # Start WebSocket price stream in background
     ws_start()

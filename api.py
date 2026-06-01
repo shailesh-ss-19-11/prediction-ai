@@ -3,6 +3,7 @@ REST API server for the prediction-ai bot.
 Started as a daemon thread from main.py — shares the live PaperTradingEngine instance.
 """
 
+import json
 import logging
 import os
 import threading
@@ -12,10 +13,14 @@ from flask import Flask, jsonify, send_file
 
 logger = logging.getLogger(__name__)
 
+TRADE_RECORDS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "trade_records.json")
+
 
 def create_app(paper_engine):
     app = Flask(__name__)
     app.logger.disabled = True  # suppress Flask's own logger; main.py handles logging
+
+    # ── paper-trades ──────────────────────────────────────────────────────────
 
     @app.route("/paper-trades", methods=["GET"])
     def get_paper_trades():
@@ -37,6 +42,28 @@ def create_app(paper_engine):
             mimetype="application/json",
             as_attachment=True,
             download_name="paper_trades.json",
+        )
+
+    # ── trade-records ─────────────────────────────────────────────────────────
+
+    @app.route("/trade-records", methods=["GET"])
+    def get_trade_records():
+        """Return trade_records.json content as JSON."""
+        if not os.path.exists(TRADE_RECORDS_FILE):
+            return jsonify([])
+        with open(TRADE_RECORDS_FILE, "r", encoding="utf-8") as fh:
+            return jsonify(json.load(fh))
+
+    @app.route("/trade-records/download", methods=["GET"])
+    def download_trade_records():
+        """Download trade_records.json as a file attachment."""
+        if not os.path.exists(TRADE_RECORDS_FILE):
+            return jsonify([]), 200
+        return send_file(
+            TRADE_RECORDS_FILE,
+            mimetype="application/json",
+            as_attachment=True,
+            download_name="trade_records.json",
         )
 
     return app

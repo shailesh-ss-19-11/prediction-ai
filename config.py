@@ -72,6 +72,10 @@ TRADINGVIEW_SECRET = ""
 
 # --- Trading mode ---
 PAPER_TRADING_MODE    = True   # True = paper, False = live (be careful!)
+AUTO_TRADE            = False  # True = auto-place limit orders on Delta Exchange when signal fires
+                               # Requires PAPER_TRADING_MODE = False and DELTA_API_KEY filled in
+MAX_CONTRACTS_PER_TRADE = 5   # Hard cap on live order size (1 contract = $1 notional on Delta)
+                               # 5 contracts = $5 max exposure. Increase only when confident.
 MAX_DAILY_LOSS_PERCENT = 3.0
 MAX_DRAWDOWN_PERCENT   = 10.0
 USE_AI_ENGINE          = False  # flip True when ready

@@ -493,7 +493,7 @@ def main() -> None:
 
     with open(args.out, "w", encoding="utf-8") as fh:
         json.dump(asdict(result), fh, indent=2)
-    print(f"Results saved → {args.out}\n")
+    print(f"Results saved -> {args.out}\n")
 
 
 if __name__ == "__main__":

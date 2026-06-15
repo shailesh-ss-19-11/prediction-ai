@@ -266,7 +266,7 @@ class PaperTradingEngine:
         # Average R:R achieved
         rr_values = []
         for t in trades:
-            sl_dist = abs(t.entry - t.stop_loss)
+            sl_dist = abs(t.entry - (t.initial_sl if t.initial_sl is not None else t.stop_loss))
             if sl_dist > 0 and t.exit_price is not None:
                 achieved = abs(t.exit_price - t.entry)
                 rr_values.append(achieved / sl_dist)

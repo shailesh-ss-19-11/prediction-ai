@@ -1,13 +1,16 @@
 """
-Backtest harness for DeltaSignalBot.
+Fast vectorized backtester for DeltaSignalBot.
 
-Fetches 30-day + 45-day warmup history from Binance (public API, no key needed),
-replays every 15m bar through the live strategy stack, simulates intrabar SL/TP,
-and prints a full performance report.
+All indicators are pre-computed once on the full series.
+The main loop only indexes into pre-computed arrays — O(n) total,
+not O(n^2) like the bar-by-bar approach.
+
+Data source: Binance public API (no key needed), cached to CSV.
 
 Usage:
-    python3 backtest.py
-    python3 backtest.py --days 30 --symbol BTCUSDT
+    python backtest.py
+    python backtest.py --days 60 --symbol BTCUSDT
+    python backtest.py --days 30 --symbol BTCUSDT ETHUSDT XAUTUSD
 """
 
 from __future__ import annotations
@@ -28,17 +31,17 @@ import requests
 sys.path.insert(0, os.path.dirname(__file__))
 
 import config
-from core.indicators import calculate_all
+from core.indicators import IndicatorResult
 from core.patterns import detect_all as detect_patterns
-from core.market_structure import get_structure_summary, find_swing_points, classify_swings
+from core.market_structure import get_structure_summary
 from core.smc import (
     detect_order_blocks,
     detect_fair_value_gaps,
     detect_liquidity_sweeps,
+    get_institutional_zones,
 )
 from core.strategy import TrendStrategy
-from core.advanced_filters import VolatilityFilter
-from risk.risk_manager import RiskManager
+from core.market_structure import find_swing_points
 
 logging.basicConfig(
     level=logging.WARNING,
@@ -46,86 +49,137 @@ logging.basicConfig(
     datefmt="%H:%M:%S",
 )
 logger = logging.getLogger("backtest")
-logger.setLevel(logging.INFO)
 
 BINANCE_URL = "https://api.binance.com/api/v3/klines"
-CACHE_DIR = os.path.join(os.path.dirname(__file__), "data", "bt_cache")
+CACHE_DIR   = os.path.join(os.path.dirname(__file__), "data", "bt_cache")
 
-# Rolling window sizes — mirror MarketDataManager.CANDLE_LIMITS
-_WIN_15M, _WIN_1H, _WIN_4H = 60, 250, 300
-_WARMUP_4H = 200   # need 200 4h bars for EMA200 to be valid
-
+# Seconds per timeframe
 _SEC = {"15m": 900, "1h": 3600, "4h": 14400}
-_COOLDOWN_SEC = 4 * 3600
-_MAX_PER_DAY  = 3
 
-# Fees / slippage (realistic for crypto futures)
-TAKER_FEE_RATE   = 0.0005   # 0.05% per side
-SLIPPAGE_PCT     = 0.0002   # 0.02% per fill
+# Asian session filter: 00:00-07:00 UTC (low liquidity, matches live bot)
+_ASIAN_START, _ASIAN_END = 0, 7
+
+# Trade management
+_COOLDOWN_SEC    = 4 * 3600
+_MAX_PER_DAY     = 3
+_MIN_CONDITIONS  = 6            # 6 of 7 must pass
+_MIN_TREND_STR   = 0.5
+_VOLUME_LOOKBACK = 20
+_VOLUME_MULT     = 1.5
+
+# Realistic cost model
+TAKER_FEE_RATE = 0.0005   # 0.05% per side
+SLIPPAGE_PCT   = 0.0002   # 0.02% slippage on fill
 
 
 # ---------------------------------------------------------------------------
-# Data fetch
+# Data layer
 # ---------------------------------------------------------------------------
 
-def _binance_klines(symbol: str, interval: str, start_ms: int, end_ms: int) -> list[dict]:
-    r = requests.get(
-        BINANCE_URL,
-        params={
-            "symbol": symbol,
-            "interval": interval,
-            "startTime": start_ms,
-            "endTime": end_ms,
-            "limit": 1000,
-        },
-        timeout=30,
-    )
-    r.raise_for_status()
-    rows = []
-    for k in r.json():
-        rows.append({
-            "timestamp": k[0] / 1000.0,   # open time → seconds
-            "open":  float(k[1]),
-            "high":  float(k[2]),
-            "low":   float(k[3]),
-            "close": float(k[4]),
-            "volume": float(k[5]),
-        })
-    return rows
-
-
-def fetch_history(symbol: str, interval: str, days: int) -> pd.DataFrame:
+def _fetch_binance(symbol: str, interval: str, days: int) -> pd.DataFrame:
     os.makedirs(CACHE_DIR, exist_ok=True)
-    cache_file = os.path.join(CACHE_DIR, f"{symbol}_{interval}_{days}d.csv")
-    if os.path.exists(cache_file):
-        df = pd.read_csv(cache_file)
-        logger.info("  cache hit  %-10s %-3s  %d candles", symbol, interval, len(df))
-        return df
+    cache = os.path.join(CACHE_DIR, f"{symbol}_{interval}_{days}d.csv")
+    if os.path.exists(cache):
+        df = pd.read_csv(cache)
+        print(f"  [cache] {symbol} {interval}  {len(df):,} bars")
+        return df.astype(float)
 
-    now_ms    = int(datetime.now(timezone.utc).timestamp() * 1000)
-    start_ms  = now_ms - days * 24 * 3600 * 1000
-    by_time: dict[int, dict] = {}
-
-    cur_start = start_ms
-    for _ in range(200):
-        chunk = _binance_klines(symbol, interval, cur_start, now_ms)
-        if not chunk:
+    print(f"  [fetch] {symbol} {interval}  {days}d...")
+    now_ms   = int(datetime.now(timezone.utc).timestamp() * 1000)
+    start_ms = now_ms - days * 86400 * 1000
+    rows: dict[int, dict] = {}
+    cur = start_ms
+    for _ in range(300):
+        r = requests.get(BINANCE_URL, params={
+            "symbol": symbol, "interval": interval,
+            "startTime": cur, "endTime": now_ms, "limit": 1000,
+        }, timeout=30)
+        r.raise_for_status()
+        batch = r.json()
+        if not batch:
             break
-        for c in chunk:
-            by_time[int(c["timestamp"])] = c
-        oldest = min(int(c["timestamp"]) for c in chunk)
-        newest = max(int(c["timestamp"]) for c in chunk)
+        for k in batch:
+            ts = int(k[0]) // 1000
+            rows[ts] = {"timestamp": float(ts), "open": float(k[1]),
+                        "high": float(k[2]),  "low": float(k[3]),
+                        "close": float(k[4]), "volume": float(k[5])}
+        newest = max(int(k[0]) for k in batch) // 1000
         if newest * 1000 >= now_ms - _SEC[interval] * 1000:
             break
-        cur_start = (newest + _SEC[interval]) * 1000
+        cur = (newest + _SEC[interval]) * 1000
         time.sleep(0.1)
 
-    rows = [v for _, v in sorted(by_time.items())]
-    df = pd.DataFrame(rows).astype(float)
-    df = df.sort_values("timestamp").reset_index(drop=True)
-    df.to_csv(cache_file, index=False)
-    logger.info("  fetched    %-10s %-3s  %d candles", symbol, interval, len(df))
+    df = pd.DataFrame(sorted(rows.values(), key=lambda x: x["timestamp"])).astype(float)
+    df.to_csv(cache, index=False)
+    print(f"         saved {len(df):,} bars -> {cache}")
     return df
+
+
+# ---------------------------------------------------------------------------
+# Pre-vectorized indicators
+# ---------------------------------------------------------------------------
+
+def _ewm(s: pd.Series, span: int) -> pd.Series:
+    return s.ewm(span=span, adjust=False, min_periods=span).mean()
+
+
+def _rsi(s: pd.Series, period: int = 14) -> pd.Series:
+    d = s.diff()
+    gain = d.clip(lower=0).ewm(alpha=1/period, adjust=False, min_periods=period).mean()
+    loss = (-d).clip(lower=0).ewm(alpha=1/period, adjust=False, min_periods=period).mean()
+    return 100 - 100 / (1 + gain / loss.replace(0, float("nan")))
+
+
+def _atr(df: pd.DataFrame, period: int = 14) -> pd.Series:
+    h, l, c = df["high"], df["low"], df["close"]
+    tr = pd.concat([h - l, (h - c.shift()).abs(), (l - c.shift()).abs()], axis=1).max(axis=1)
+    return tr.ewm(alpha=1/period, adjust=False, min_periods=period).mean()
+
+
+def _macd(s: pd.Series):
+    fast = s.ewm(span=12, adjust=False, min_periods=12).mean()
+    slow = s.ewm(span=26, adjust=False, min_periods=26).mean()
+    line = fast - slow
+    sig  = line.ewm(span=9, adjust=False, min_periods=9).mean()
+    return line, sig, line - sig
+
+
+def precompute(df: pd.DataFrame) -> pd.DataFrame:
+    """Add all indicator columns to a copy of df. Runs once per timeframe."""
+    d = df.copy()
+    c = d["close"]
+    d["ema20"]  = _ewm(c, 20)
+    d["ema50"]  = _ewm(c, 50)
+    d["ema200"] = _ewm(c, 200)
+    d["rsi14"]  = _rsi(c)
+    d["atr14"]  = _atr(d)
+    d["macd_line"], d["macd_sig"], d["macd_hist"] = _macd(c)
+    d["vol_ma20"] = d["volume"].rolling(20, min_periods=20).mean()
+    return d
+
+
+# ---------------------------------------------------------------------------
+# Per-4h-bar structure (run once, forward-fill to 15m)
+# ---------------------------------------------------------------------------
+
+def build_structure_series(df4h: pd.DataFrame) -> pd.DataFrame:
+    """
+    For each fully-closed 4h bar, compute the bias and trend_strength.
+    Uses a 100-bar rolling window (covers 400h ~ 17 days of context).
+    Returns a DataFrame indexed by 4h bar index with 'bias' and 'strength'.
+    """
+    biases    = []
+    strengths = []
+    n = len(df4h)
+    for k in range(n):
+        window = df4h.iloc[max(0, k - 100): k + 1]
+        s = get_structure_summary(window)
+        biases.append(s["bias"])
+        strengths.append(s["trend_strength"])
+    return pd.DataFrame({
+        "bias":     biases,
+        "strength": strengths,
+    }, index=df4h.index)
 
 
 # ---------------------------------------------------------------------------
@@ -134,237 +188,288 @@ def fetch_history(symbol: str, interval: str, days: int) -> pd.DataFrame:
 
 @dataclass
 class Trade:
-    symbol: str
-    direction: str
-    entry: float
-    sl: float
-    tp1: float
-    tp2: float
-    size: float
-    entry_bar: int   # index in d15
-    exit_bar: Optional[int] = None
-    exit_price: Optional[float] = None
+    symbol:      str
+    direction:   str
+    entry:       float
+    sl:          float
+    initial_sl:  float
+    tp1:         float
+    tp2:         float
+    size:        float
+    entry_bar:   int
+    exit_bar:    Optional[int] = None
+    exit_price:  Optional[float] = None
     exit_reason: str = ""
-    pnl: float = 0.0
-    fees: float = 0.0
+    pnl:         float = 0.0
+    fees:        float = 0.0
 
 
 # ---------------------------------------------------------------------------
-# Backtester
+# Walk-forward simulator
 # ---------------------------------------------------------------------------
 
-class Backtester:
-    def __init__(self, symbol: str, days: int, balance: float = 100.0):
+class FastBacktester:
+    def __init__(self, symbol: str, days: int, balance: float):
         self.symbol  = symbol
         self.days    = days
         self.balance = balance
         self.peak    = balance
         self.strategy = TrendStrategy()
-        self.risk     = RiskManager(balance, config.MAX_RISK_PERCENT)
-        self.vol      = VolatilityFilter()
-        self.data: dict[str, pd.DataFrame] = {}
 
         self._last_signal: dict[str, float] = {}
-        self._day_count: dict[tuple, int] = {}
-        self.open_trades: list[Trade] = []
+        self._day_count:   dict[object, int] = {}
+        self.open_trades:   list[Trade] = []
         self.closed_trades: list[Trade] = []
         self.signals = 0
 
-    # ------------------------------------------------------------------
-    # Load data
+        self.d15: pd.DataFrame
+        self.d1h: pd.DataFrame
+        self.d4h: pd.DataFrame
+        self.struct4h: pd.DataFrame
+
     # ------------------------------------------------------------------
     def load(self) -> None:
-        fetch_days = self.days + 50   # extra warmup margin
-        self.data = {
-            "15m": fetch_history(self.symbol, "15m", fetch_days),
-            "1h":  fetch_history(self.symbol, "1h",  fetch_days),
-            "4h":  fetch_history(self.symbol, "4h",  fetch_days),
-        }
+        print(f"\n[{self.symbol}] Fetching data...")
+        warmup = 60   # extra days for indicator warm-up
+        total  = self.days + warmup
+        self.d15 = _fetch_binance(self.symbol, "15m", total)
+        self.d1h = _fetch_binance(self.symbol, "1h",  total)
+        self.d4h = _fetch_binance(self.symbol, "4h",  total)
+
+        print(f"  Pre-computing indicators...")
+        self.d15 = precompute(self.d15)
+        self.d1h = precompute(self.d1h)
+        self.d4h = precompute(self.d4h)
+
+        print(f"  Computing 4h structure (once per 4h bar)...")
+        self.struct4h = build_structure_series(self.d4h)
+
+        print(f"  Data ready: {len(self.d15):,} x 15m | {len(self.d1h):,} x 1h | {len(self.d4h):,} x 4h")
 
     # ------------------------------------------------------------------
-    # Cooldown / daily cap helpers
-    # ------------------------------------------------------------------
-    def _on_cooldown(self, direction: str, close_time: float) -> bool:
+    def _on_cooldown(self, direction: str, ts: float) -> bool:
         key = f"{self.symbol}_{direction}"
-        return (close_time - self._last_signal.get(key, 0)) < _COOLDOWN_SEC
+        return (ts - self._last_signal.get(key, 0)) < _COOLDOWN_SEC
 
-    def _can_trade_today(self, close_time: float) -> bool:
-        day = datetime.fromtimestamp(close_time, timezone.utc).date()
+    def _can_trade_today(self, ts: float) -> bool:
+        day = datetime.fromtimestamp(ts, timezone.utc).date()
         return self._day_count.get(day, 0) < _MAX_PER_DAY
 
-    def _record_signal(self, direction: str, close_time: float) -> None:
+    def _record_signal(self, direction: str, ts: float) -> None:
         key = f"{self.symbol}_{direction}"
-        self._last_signal[key] = close_time
-        day = datetime.fromtimestamp(close_time, timezone.utc).date()
+        self._last_signal[key] = ts
+        day = datetime.fromtimestamp(ts, timezone.utc).date()
         self._day_count[day] = self._day_count.get(day, 0) + 1
 
     # ------------------------------------------------------------------
-    # Intrabar SL/TP check
-    # ------------------------------------------------------------------
-    def _update_trades(self, bar_high: float, bar_low: float) -> None:
+    def _update_trades(self, high: float, low: float, bar_idx: int) -> None:
         still_open: list[Trade] = []
         for t in self.open_trades:
+            risk = abs(t.entry - t.initial_sl)
+            # Breakeven: move SL to entry once +1R is reached
+            if t.direction == "LONG":
+                if risk > 0 and high >= t.entry + risk and t.sl < t.entry:
+                    t.sl = t.entry
+            else:
+                if risk > 0 and low <= t.entry - risk and t.sl > t.entry:
+                    t.sl = t.entry
+
             filled = False
             if t.direction == "LONG":
-                if bar_low <= t.sl:
-                    self._close(t, t.sl, "sl")
+                if low <= t.sl:
+                    reason = "breakeven" if t.sl >= t.entry else "sl"
+                    self._close(t, t.sl, reason, bar_idx)
                     filled = True
-                elif bar_high >= t.tp2:
-                    self._close(t, t.tp2, "tp2")
+                elif high >= t.tp2:
+                    self._close(t, t.tp2, "tp2", bar_idx)
                     filled = True
-                elif bar_high >= t.tp1:
-                    self._close(t, t.tp1, "tp1")
+                elif high >= t.tp1:
+                    self._close(t, t.tp1, "tp1", bar_idx)
                     filled = True
-            else:   # SHORT
-                if bar_high >= t.sl:
-                    self._close(t, t.sl, "sl")
+            else:
+                if high >= t.sl:
+                    reason = "breakeven" if t.sl <= t.entry else "sl"
+                    self._close(t, t.sl, reason, bar_idx)
                     filled = True
-                elif bar_low <= t.tp2:
-                    self._close(t, t.tp2, "tp2")
+                elif low <= t.tp2:
+                    self._close(t, t.tp2, "tp2", bar_idx)
                     filled = True
-                elif bar_low <= t.tp1:
-                    self._close(t, t.tp1, "tp1")
+                elif low <= t.tp1:
+                    self._close(t, t.tp1, "tp1", bar_idx)
                     filled = True
+
             if not filled:
                 still_open.append(t)
         self.open_trades = still_open
 
-    def _close(self, trade: Trade, exit_price: float, reason: str) -> None:
-        slippage = exit_price * SLIPPAGE_PCT
+    def _close(self, trade: Trade, exit_price: float, reason: str, bar_idx: int) -> None:
+        slip = exit_price * SLIPPAGE_PCT
         if trade.direction == "LONG":
-            exit_price -= slippage
+            exit_price -= slip
             pnl = (exit_price - trade.entry) * trade.size
         else:
-            exit_price += slippage
+            exit_price += slip
             pnl = (trade.entry - exit_price) * trade.size
-
         fees = (trade.entry + exit_price) * trade.size * TAKER_FEE_RATE
-        trade.exit_price  = exit_price
+        net  = round(pnl - fees, 6)
+
+        trade.exit_price  = round(exit_price, 6)
+        trade.exit_bar    = bar_idx
         trade.exit_reason = reason
-        trade.pnl         = round(pnl - fees, 6)
+        trade.pnl         = net
         trade.fees        = round(fees, 6)
-        self.balance     += trade.pnl
+        self.balance     += net
         self.peak         = max(self.peak, self.balance)
         self.closed_trades.append(trade)
 
     # ------------------------------------------------------------------
-    # Per-bar evaluation (strict no-lookahead)
-    # ------------------------------------------------------------------
-    def _evaluate(self, i: int) -> None:
-        d15, d1h, d4h = self.data["15m"], self.data["1h"], self.data["4h"]
-        ts15 = d15["timestamp"].values
-        ts1h = d1h["timestamp"].values
-        ts4h = d4h["timestamp"].values
+    def _check_signal(self, i: int) -> None:
+        row15 = self.d15.iloc[i]
+        close_ts = float(row15["timestamp"]) + _SEC["15m"]
 
-        close_time = ts15[i] + _SEC["15m"]   # this bar is fully closed
-
-        # how many 1h / 4h bars are FULLY closed by close_time
-        k1 = int((ts1h + _SEC["1h"]  <= close_time).sum())
-        k4 = int((ts4h + _SEC["4h"]  <= close_time).sum())
-
-        if k1 < 210 or k4 < _WARMUP_4H:   # need 200+ 4h for EMA200
+        # Asian session filter
+        bar_hour = datetime.fromtimestamp(close_ts, timezone.utc).hour
+        if _ASIAN_START <= bar_hour < _ASIAN_END:
             return
 
-        if not self._can_trade_today(close_time):
+        if not self._can_trade_today(close_ts):
             return
 
-        # Skip Asian session (00:00–07:00 UTC) — matches live bot behaviour
-        bar_hour = datetime.fromtimestamp(close_time, timezone.utc).hour
-        if 0 <= bar_hour < 7:
+        # Map to fully-closed 1h and 4h bars
+        ts1h = self.d1h["timestamp"].values
+        ts4h = self.d4h["timestamp"].values
+        k1 = int((ts1h + _SEC["1h"]  <= close_ts).sum()) - 1
+        k4 = int((ts4h + _SEC["4h"]  <= close_ts).sum()) - 1
+
+        if k1 < 210 or k4 < 205:   # need EMA200 warmed up on both
             return
 
-        df_15m = d15.iloc[max(0, i - _WIN_15M + 1): i + 1].copy()
-        df_1h  = d1h.iloc[max(0, k1 - _WIN_1H):  k1].copy()
-        df_4h  = d4h.iloc[max(0, k4 - _WIN_4H):  k4].copy()
+        row1h  = self.d1h.iloc[k1]
+        row4h  = self.d4h.iloc[k4]
+        struct = self.struct4h.iloc[k4]
 
-        ind_15m = calculate_all(df_15m)
-        ind_1h  = calculate_all(df_1h)
-        ind_4h  = calculate_all(df_4h)
+        # ---- Build IndicatorResult objects from precomputed columns ----
+        ind_15m = IndicatorResult(
+            ema_20=float(row15["ema20"])  if not pd.isna(row15["ema20"])  else float("nan"),
+            ema_50=float(row15["ema50"])  if not pd.isna(row15["ema50"])  else float("nan"),
+            ema_200=float(row15["ema200"])if not pd.isna(row15["ema200"]) else float("nan"),
+            rsi_14=float(row15["rsi14"]) if not pd.isna(row15["rsi14"]) else float("nan"),
+            atr_14=float(row15["atr14"]) if not pd.isna(row15["atr14"]) else float("nan"),
+            macd_line=float(row15["macd_line"]) if not pd.isna(row15["macd_line"]) else float("nan"),
+            signal_line=float(row15["macd_sig"]) if not pd.isna(row15["macd_sig"]) else float("nan"),
+            histogram=float(row15["macd_hist"])  if not pd.isna(row15["macd_hist"]) else float("nan"),
+        )
+        ind_1h = IndicatorResult(
+            ema_20=float(row1h["ema20"])  if not pd.isna(row1h["ema20"])  else float("nan"),
+            ema_50=float(row1h["ema50"])  if not pd.isna(row1h["ema50"])  else float("nan"),
+            ema_200=float(row1h["ema200"])if not pd.isna(row1h["ema200"]) else float("nan"),
+        )
+        ind_4h = IndicatorResult(
+            ema_200=float(row4h["ema200"])if not pd.isna(row4h["ema200"]) else float("nan"),
+        )
 
-        if self.vol.get_volatility_state(df_15m, ind_15m.atr_14) == "extreme":
-            return
-
-        patterns  = detect_patterns(df_15m)
-        structure = get_structure_summary(df_4h)
-
-        raw_swings = find_swing_points(df_15m)
-        obs  = detect_order_blocks(df_15m)
-        fvgs = detect_fair_value_gaps(df_15m)
-        sweeps = detect_liquidity_sweeps(df_15m, raw_swings)
-
-        smc_data = {
-            "order_blocks":    obs,
-            "fair_value_gaps": fvgs,
-            "liquidity_sweeps": sweeps,
+        structure = {
+            "bias":           struct["bias"],
+            "trend_strength": float(struct["strength"]),
+            "last_bos":       None,
+            "last_choch":     None,
+            "swing_points":   [],
         }
 
+        # Patterns (fast — just last 3 rows, O(1))
+        win_15m = self.d15.iloc[max(0, i - 4): i + 1]
+        patterns = detect_patterns(win_15m)
+
+        # SMC (fast — only on last 60 bars)
+        smc_win = self.d15.iloc[max(0, i - 59): i + 1]
+        obs  = detect_order_blocks(smc_win)
+        fvgs = detect_fair_value_gaps(smc_win)
+        swings = find_swing_points(smc_win)
+        smc_data = {
+            "order_blocks":     obs,
+            "fair_value_gaps":  fvgs,
+            "liquidity_sweeps": detect_liquidity_sweeps(smc_win, swings),
+            "zones":            get_institutional_zones(obs, fvgs),
+        }
+
+        # Full strategy window for SL placement (needs swing history)
+        sl_win = self.d15.iloc[max(0, i - 59): i + 1]
+
+        mtf = {"15m": sl_win, "1h": self.d1h.iloc[max(0, k1 - 60): k1 + 1],
+               "4h": self.d4h.iloc[max(0, k4 - 60): k4 + 1]}
+
         setups = self.strategy.evaluate(
-            self.symbol,
-            {"15m": df_15m, "1h": df_1h, "4h": df_4h},
-            ind_15m, ind_1h, ind_4h,
+            self.symbol, mtf, ind_15m, ind_1h, ind_4h,
             patterns, structure, smc_data,
         )
 
         for setup in setups:
-            if self._on_cooldown(setup.direction, close_time):
+            if self._on_cooldown(setup.direction, close_ts):
                 continue
-            if len(self.open_trades) >= 3:
+            # No duplicate position
+            if any(t.direction == setup.direction for t in self.open_trades):
                 continue
-
-            risk = self.risk.evaluate_trade(
-                setup.entry, setup.stop_loss, setup.tp1,
-                balance=self.balance,
-                current_balance=self.balance,
-                peak_balance=self.peak,
-            )
-            if not risk.can_trade or risk.lot_size <= 0:
+            # Max concurrent positions cap
+            if len(self.open_trades) >= 2:
                 continue
 
-            # Apply slippage to entry
-            slippage = setup.entry * SLIPPAGE_PCT
-            actual_entry = setup.entry + (slippage if setup.direction == "LONG" else -slippage)
-            entry_fee = actual_entry * risk.lot_size * TAKER_FEE_RATE
+            # Position sizing (1% risk)
+            sl_dist = abs(setup.entry - setup.stop_loss)
+            if sl_dist <= 0:
+                continue
+            risk_usd = self.balance * (config.MAX_RISK_PERCENT / 100.0)
+            lot_size = risk_usd / sl_dist
+            if lot_size <= 0:
+                continue
+
+            # Min R:R
+            reward = abs(setup.tp1 - setup.entry)
+            if sl_dist > 0 and (reward / sl_dist) < config.MIN_RISK_REWARD:
+                continue
+
+            # Apply entry slippage
+            slip = setup.entry * SLIPPAGE_PCT
+            actual_entry = setup.entry + (slip if setup.direction == "LONG" else -slip)
+            entry_fee = actual_entry * lot_size * TAKER_FEE_RATE
             self.balance -= entry_fee
 
             trade = Trade(
                 symbol=self.symbol,
                 direction=setup.direction,
-                entry=actual_entry,
+                entry=round(actual_entry, 6),
                 sl=setup.stop_loss,
+                initial_sl=setup.stop_loss,
                 tp1=setup.tp1,
                 tp2=setup.tp2,
-                size=risk.lot_size,
+                size=round(lot_size, 6),
                 entry_bar=i,
             )
             self.open_trades.append(trade)
-            self._record_signal(setup.direction, close_time)
+            self._record_signal(setup.direction, close_ts)
             self.signals += 1
             logger.info(
-                "  SIGNAL %s %s @ %.4f  SL=%.4f  TP1=%.4f  TP2=%.4f",
-                setup.direction, self.symbol, actual_entry,
-                setup.stop_loss, setup.tp1, setup.tp2,
+                "  [%s] SIGNAL %s @ %.2f  SL=%.2f  TP1=%.2f  lot=%.4f",
+                datetime.fromtimestamp(close_ts, timezone.utc).strftime("%m-%d %H:%M"),
+                setup.direction, actual_entry, setup.stop_loss, setup.tp1, lot_size,
             )
 
     # ------------------------------------------------------------------
-    # Main loop
-    # ------------------------------------------------------------------
     def run(self) -> None:
-        d15 = self.data["15m"]
-        n   = len(d15)
-        logger.info("Replaying %d bars for %s...", n, self.symbol)
-
+        n = len(self.d15)
+        print(f"  Simulating {n:,} bars...", end="", flush=True)
         for i in range(n):
-            bar = d15.iloc[i]
-            # 1) update open trades with this bar's intrabar range
-            self._update_trades(float(bar["high"]), float(bar["low"]))
-            # 2) evaluate a fresh signal on the just-closed bar
-            self._evaluate(i)
+            bar = self.d15.iloc[i]
+            self._update_trades(float(bar["high"]), float(bar["low"]), i)
+            self._check_signal(i)
+            if i % (n // 20) == 0:
+                print(".", end="", flush=True)
+        print(" done")
 
-        # Close remaining open trades at last price (end of test window)
+        # Force-close remaining positions at last close
         if self.open_trades:
-            last_close = float(d15["close"].iloc[-1])
+            last_price = float(self.d15["close"].iloc[-1])
             for t in list(self.open_trades):
-                self._close(t, last_close, "end_of_test")
+                self._close(t, last_price, "end_of_test", n - 1)
             self.open_trades.clear()
 
 
@@ -372,53 +477,48 @@ class Backtester:
 # Report
 # ---------------------------------------------------------------------------
 
-def report(bt: Backtester) -> None:
+def report(bt: FastBacktester) -> None:
     trades = bt.closed_trades
     total  = len(trades)
 
-    print()
-    print("=" * 62)
-    print(f"  BACKTEST RESULTS — {bt.days}d window")
-    print("=" * 62)
-    print(f"  Symbol           : {bt.symbol}")
-    print(f"  Fees             : {TAKER_FEE_RATE*100:.3f}% per side (taker)")
-    print(f"  Slippage         : {SLIPPAGE_PCT*100:.3f}% per fill")
-    print(f"  Risk per trade   : {config.MAX_RISK_PERCENT:.1f}% of ${bt.balance:.2f}")
-    print("-" * 62)
+    sep = "=" * 64
+    print(f"\n{sep}")
+    print(f"  BACKTEST — {bt.symbol}  |  {bt.days}d window")
+    print(sep)
+    print(f"  Balance       : ${config.ACCOUNT_BALANCE:.2f}")
+    print(f"  Risk/trade    : {config.MAX_RISK_PERCENT:.1f}%  Min R:R: {config.MIN_RISK_REWARD}")
+    print(f"  Fees          : {TAKER_FEE_RATE*100:.3f}% per side   Slippage: {SLIPPAGE_PCT*100:.3f}%")
+    print("-" * 64)
 
     if total == 0:
-        print("  Signals opened   : 0")
-        print("  No trades triggered — 6/7 conditions never aligned in")
-        print("  the test window. Strategy requires a strongly trending")
-        print("  market with multi-TF alignment.")
-        print("=" * 62)
+        print("  No trades — 6/7 strategy conditions never aligned.")
+        print("  Try a longer window or a trending market period.")
+        print(sep)
         return
 
-    winners  = [t for t in trades if t.pnl > 0]
-    losers   = [t for t in trades if t.pnl <= 0]
-    total_pnl = sum(t.pnl for t in trades)
+    winners    = [t for t in trades if t.pnl > 0]
+    losers     = [t for t in trades if t.pnl <= 0]
+    breakevens = [t for t in trades if t.exit_reason == "breakeven"]
+    sl_hits    = [t for t in trades if t.exit_reason == "sl"]
+    total_pnl  = sum(t.pnl for t in trades)
     total_fees = sum(t.fees for t in trades)
-    win_rate  = len(winners) / total * 100
+    win_rate   = len(winners) / total * 100
 
-    # Avg R achieved
     rr_vals = []
     for t in trades:
-        sl_d = abs(t.entry - t.sl)
-        if sl_d > 0 and t.exit_price is not None:
+        sl_d = abs(t.entry - t.initial_sl)
+        if sl_d > 0 and t.exit_price:
             rr_vals.append(abs(t.exit_price - t.entry) / sl_d)
     avg_rr = sum(rr_vals) / len(rr_vals) if rr_vals else 0.0
 
-    # Expectancy
     avg_win  = sum(t.pnl for t in winners) / len(winners) if winners else 0
     avg_loss = sum(t.pnl for t in losers)  / len(losers)  if losers  else 0
     expectancy = (win_rate/100) * avg_win + (1 - win_rate/100) * avg_loss
 
-    # Profit factor
-    gross_wins  = sum(t.pnl for t in winners)
+    gross_wins   = sum(t.pnl for t in winners)
     gross_losses = abs(sum(t.pnl for t in losers))
-    profit_factor = (gross_wins / gross_losses) if gross_losses > 0 else float("inf")
+    pf = (gross_wins / gross_losses) if gross_losses > 0 else float("inf")
 
-    # Max drawdown
     equity = config.ACCOUNT_BALANCE
     peak   = equity
     max_dd = 0.0
@@ -430,54 +530,64 @@ def report(bt: Backtester) -> None:
 
     ret = (bt.balance / config.ACCOUNT_BALANCE - 1) * 100
 
-    print(f"  Signals opened   : {bt.signals}")
-    print(f"  Trades closed    : {total}")
-    print(f"  Win rate         : {win_rate:.1f}%  ({len(winners)}W / {len(losers)}L)")
-    print(f"  Net P&L          : ${total_pnl:+.4f}  (fees paid ${total_fees:.4f})")
-    print(f"  Expectancy/trade : ${expectancy:+.4f}")
-    print(f"  Profit factor    : {profit_factor:.3f}")
-    print(f"  Avg R achieved   : {avg_rr:.2f}")
-    print(f"  Max drawdown     : {max_dd:.2f}%")
-    print(f"  Start balance    : ${config.ACCOUNT_BALANCE:.2f}")
-    print(f"  End balance      : ${bt.balance:.4f}")
-    print(f"  Return           : {ret:+.2f}%")
-    print("-" * 62)
+    print(f"  Signals       : {bt.signals}   Trades closed: {total}")
+    print(f"  Win rate      : {win_rate:.1f}%   ({len(winners)}W / {len(losers)}L / {len(breakevens)}BE)")
+    print(f"  SL hits       : {len(sl_hits)}   Breakevens: {len(breakevens)}")
+    print(f"  Net P&L       : ${total_pnl:+.4f}  (fees ${total_fees:.4f})")
+    print(f"  Expectancy    : ${expectancy:+.4f} per trade")
+    print(f"  Profit factor : {pf:.3f}")
+    print(f"  Avg R         : {avg_rr:.2f}")
+    print(f"  Max drawdown  : {max_dd:.2f}%")
+    print(f"  Start balance : ${config.ACCOUNT_BALANCE:.2f}")
+    print(f"  End balance   : ${bt.balance:.4f}")
+    print(f"  Return        : {ret:+.2f}%")
+    print("-" * 64)
 
-    # Exit reason breakdown
     reasons: dict[str, int] = {}
     for t in trades:
         reasons[t.exit_reason] = reasons.get(t.exit_reason, 0) + 1
-    print("  Exit reasons     : " +
-          "  ".join(f"{k}={v}" for k, v in sorted(reasons.items())))
+    print("  Exits: " + "  ".join(f"{k}={v}" for k, v in sorted(reasons.items())))
 
-    print("-" * 62)
-    print("  Trade log (last 10):")
-    print(f"  {'#':>3}  {'Dir':<6}  {'Entry':>10}  {'Exit':>10}  "
-          f"{'PnL':>8}  {'Reason':<14}")
-    for idx, t in enumerate(trades[-10:]):
-        ep = f"{t.exit_price:.4f}" if t.exit_price else "open"
-        print(f"  {idx+1:>3}  {t.direction:<6}  {t.entry:>10.4f}  {ep:>10}  "
-              f"{t.pnl:>+8.4f}  {t.exit_reason:<14}")
-    print("=" * 62)
+    print("-" * 64)
+    print(f"  {'#':>3}  {'Date':>14}  {'Dir':<6}  {'Entry':>10}  {'Exit':>10}  {'PnL':>9}  Reason")
+    for idx, t in enumerate(trades[-15:], 1):
+        dt = ""
+        if t.exit_bar and t.exit_bar < len(bt.d15):
+            ts = float(bt.d15.iloc[t.exit_bar]["timestamp"])
+            dt = datetime.fromtimestamp(ts, timezone.utc).strftime("%m-%d %H:%M")
+        ep = f"{t.exit_price:.2f}" if t.exit_price else "open"
+        mark = "W" if t.pnl > 0 else ("B" if t.exit_reason == "breakeven" else "L")
+        print(f"  {idx:>3}  {dt:>14}  {t.direction:<6}  {t.entry:>10.2f}  {ep:>10}  "
+              f"{t.pnl:>+9.4f} [{mark}] {t.exit_reason}")
+    print(sep)
 
 
 # ---------------------------------------------------------------------------
-# Entry point
+# Main
 # ---------------------------------------------------------------------------
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="Backtest DeltaSignalBot")
-    ap.add_argument("--days",   type=int, default=30,       help="test window in days")
-    ap.add_argument("--symbol", type=str, default="BTCUSDT", help="Binance symbol")
-    ap.add_argument("--balance",type=float, default=config.ACCOUNT_BALANCE)
+    ap = argparse.ArgumentParser(description="Fast vectorized backtester")
+    ap.add_argument("--days",    type=int,   default=60,         help="test window in days")
+    ap.add_argument("--balance", type=float, default=config.ACCOUNT_BALANCE)
+    ap.add_argument("--symbol",  nargs="+",  default=["BTCUSDT"], help="Binance symbol(s)")
+    ap.add_argument("--nocache", action="store_true", help="ignore cached CSV files")
     args = ap.parse_args()
 
-    print(f"Loading {args.days}d history (+50d warmup) for {args.symbol}...")
-    bt = Backtester(args.symbol, args.days, args.balance)
-    bt.load()
-    print("Running backtest...")
-    bt.run()
-    report(bt)
+    if args.nocache:
+        import shutil
+        if os.path.exists(CACHE_DIR):
+            shutil.rmtree(CACHE_DIR)
+            print("Cache cleared.")
+
+    for sym in args.symbol:
+        bt = FastBacktester(sym, args.days, args.balance)
+        bt.load()
+        t0 = time.time()
+        bt.run()
+        elapsed = time.time() - t0
+        print(f"  Simulation took {elapsed:.1f}s")
+        report(bt)
 
 
 if __name__ == "__main__":

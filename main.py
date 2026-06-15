@@ -4,6 +4,7 @@ Sends to Telegram ONLY when 6/7 strategy conditions pass.
 Message contains: Entry, SL, TP1, TP2, lot size. Nothing else.
 """
 
+import json
 import logging
 import logging.handlers
 import os
@@ -21,7 +22,7 @@ from exchanges.ws_stream import start as ws_start, get_price as ws_price
 from core.market_data import MarketDataManager
 from core.indicators import calculate_all
 from core.patterns import detect_all as detect_patterns
-from core.market_structure import get_structure_summary
+from core.market_structure import get_structure_summary, find_swing_points
 from core.smc import (detect_order_blocks, detect_fair_value_gaps,
                       detect_liquidity_sweeps, get_institutional_zones)
 from core.strategy import TrendStrategy
@@ -91,8 +92,32 @@ session_filter = SessionFilter()
 
 # Cooldown: don't repeat same direction signal within 4 hours
 # Key format: "BTCUSD_LONG" or "BTCUSD_SHORT"
+# Persisted to disk so a process restart can't bypass the cooldown
+# (this previously caused duplicate signals minutes apart).
+_COOLDOWN_FILE = "data/cooldowns.json"
 _last_signal: dict[str, float] = {}
 _COOLDOWN = 4 * 3600
+
+
+def _load_cooldowns() -> None:
+    global _last_signal
+    try:
+        if os.path.exists(_COOLDOWN_FILE):
+            with open(_COOLDOWN_FILE, "r", encoding="utf-8") as fh:
+                _last_signal = {k: float(v) for k, v in json.load(fh).items()}
+            logger.info("Loaded %d cooldown entries", len(_last_signal))
+    except (OSError, ValueError, json.JSONDecodeError):
+        logger.exception("Failed to load cooldowns — starting fresh")
+        _last_signal = {}
+
+
+def _save_cooldowns() -> None:
+    try:
+        os.makedirs(os.path.dirname(_COOLDOWN_FILE), exist_ok=True)
+        with open(_COOLDOWN_FILE, "w", encoding="utf-8") as fh:
+            json.dump(_last_signal, fh)
+    except OSError:
+        logger.exception("Failed to save cooldowns")
 
 
 def _on_cooldown(key: str) -> bool:
@@ -101,6 +126,32 @@ def _on_cooldown(key: str) -> bool:
 
 def _mark(key: str) -> None:
     _last_signal[key] = time.time()
+    _save_cooldowns()
+
+
+# ---------------------------------------------------------------------------
+# Closed-candle helper
+# ---------------------------------------------------------------------------
+
+_TF_SECONDS = {"1m": 60, "5m": 300, "15m": 900, "1h": 3600, "4h": 14400, "1d": 86400}
+
+
+def _drop_forming_candle(df, timeframe: str):
+    """
+    Delta's candle endpoint includes the still-forming candle (end = now).
+    Evaluating indicators/entries on it makes signals repaint and fire
+    mid-spike at momentum extremes — a major cause of instant SL hits.
+    Drop the last row when its bar period has not yet completed.
+    """
+    if df is None or df.empty:
+        return df
+    tf_secs = _TF_SECONDS.get(timeframe)
+    if not tf_secs:
+        return df
+    last_open = float(df["timestamp"].iloc[-1])
+    if time.time() < last_open + tf_secs:
+        return df.iloc[:-1].reset_index(drop=True)
+    return df
 
 
 # ---------------------------------------------------------------------------
@@ -186,6 +237,14 @@ def check_symbol(symbol: str) -> None:
             logger.warning("%s: missing candle data for timeframes: %s", symbol, missing)
             return
 
+        # Analyse CLOSED candles only — the API includes the forming bar,
+        # which makes every indicator and the entry price repaint.
+        for tf in ("15m", "1h", "4h"):
+            mtf[tf] = _drop_forming_candle(mtf[tf], tf)
+            if mtf[tf] is None or mtf[tf].empty:
+                logger.warning("%s: no closed candles for %s", symbol, tf)
+                return
+
         df_15m, df_1h, df_4h = mtf["15m"], mtf["1h"], mtf["4h"]
 
         # Indicators
@@ -214,10 +273,11 @@ def check_symbol(symbol: str) -> None:
 
         ob_list = detect_order_blocks(df_15m)
         fvg_list = detect_fair_value_gaps(df_15m)
+        swings_15m = find_swing_points(df_15m)
         smc_data  = {
             "order_blocks":     ob_list,
             "fair_value_gaps":  fvg_list,          # key must match strategy.py
-            "liquidity_sweeps": detect_liquidity_sweeps(df_15m, []),  # ditto
+            "liquidity_sweeps": detect_liquidity_sweeps(df_15m, swings_15m),
             "zones":            get_institutional_zones(ob_list, fvg_list),
         }
         logger.debug("%s: SMC — OBs=%d FVGs=%d",
@@ -240,6 +300,26 @@ def check_symbol(symbol: str) -> None:
                 remaining = int(_COOLDOWN - (time.time() - _last_signal.get(cooldown_key, 0)))
                 logger.info("%s %s: cooldown active (%ds remaining)",
                             symbol, setup.direction, remaining)
+                continue
+
+            # Never stack a second position in the same symbol+direction
+            # (restart-safety: cooldown alone can be lost with the process)
+            if any(t.symbol == symbol and t.direction == setup.direction
+                   for t in paper.get_open_trades()):
+                logger.info("%s %s: position already open — skipping duplicate",
+                            symbol, setup.direction)
+                continue
+
+            # Entry computed on the last closed candle — if live price has
+            # already drifted more than 25% of the risk away, the planned SL
+            # no longer protects the same move. Skip the late entry.
+            sl_risk = abs(setup.entry - setup.stop_loss)
+            if sl_risk > 0 and abs(current_price - setup.entry) > 0.25 * sl_risk:
+                logger.info(
+                    "%s %s: price drifted %.2f from entry %.2f (> 25%% of risk %.2f) — skipping",
+                    symbol, setup.direction, current_price - setup.entry,
+                    setup.entry, sl_risk,
+                )
                 continue
 
             # Risk check
@@ -265,6 +345,7 @@ def check_symbol(symbol: str) -> None:
                 trade = paper.open_trade(symbol, setup.direction, setup.entry,
                                          setup.stop_loss, setup.tp1, setup.tp2, risk.lot_size)
                 trade_id = trade.id
+                paper.save_to_file("paper_trades.json")
 
             # Send signal to Telegram
             sent = telegram.send_signal(
@@ -331,6 +412,9 @@ def run_checks() -> None:
         prices = {k: v for k, v in prices.items() if v}
         logger.debug("Live prices: %s", {k: f"{v:,.2f}" for k, v in prices.items()})
         closed_trades = paper.update(prices)
+        # Save every scan — update() can also move stops to breakeven
+        # without closing, and that state must survive a restart
+        paper.save_to_file("paper_trades.json")
         if closed_trades:
             logger.info("Paper trades closed this scan: %d", len(closed_trades))
         for closed in closed_trades:
@@ -380,6 +464,11 @@ def main() -> None:
     if "--setup" in sys.argv:
         print("Fill config.py then run: python main.py")
         sys.exit(0)
+
+    # Restore state — without this every restart forgot open trades and
+    # cooldowns, so positions were duplicated and journal entries never closed
+    paper.load_from_file("paper_trades.json")
+    _load_cooldowns()
 
     # Start REST API server in background thread
     api_server.start_api_thread(paper)

@@ -28,7 +28,7 @@ import requests
 
 from exchanges.delta_exchange import BASE_URL, PRODUCT_IDS
 from core.indicators import calculate_all
-from core.market_structure import get_structure_summary
+from core.market_structure import get_structure_summary, find_swing_points
 from core.patterns import detect_all as detect_patterns
 from core.smc import (detect_fair_value_gaps, detect_liquidity_sweeps,
                        detect_order_blocks, get_institutional_zones)
@@ -68,6 +68,7 @@ class BacktestResult:
     total_trades:        int
     wins:                int
     losses:              int
+    breakevens:          int
     timeouts:            int
     win_rate_pct:        float
     avg_rr:              float
@@ -110,7 +111,7 @@ def _fetch_15m_candles(symbol: str, days: int) -> pd.DataFrame:
     total_chunks = max(1, (end_ts - start_ts) // chunk_secs + 1)
 
     print(f"\nFetching {days}d of 15m {symbol} candles "
-          f"(~{total_chunks} requests) …", flush=True)
+          f"(~{total_chunks} requests)...", flush=True)
 
     all_rows: list[dict] = []
     current_end = end_ts
@@ -144,7 +145,7 @@ def _fetch_15m_candles(symbol: str, days: int) -> pd.DataFrame:
                     "volume":    float(c.get("volume", 0) or 0),
                 })
             chunk_n += 1
-            print(f"  chunk {chunk_n}/{total_chunks} — {len(candles)} bars", flush=True)
+            print(f"  chunk {chunk_n}/{total_chunks} - {len(candles)} bars", flush=True)
         except requests.RequestException as exc:
             logger.warning("Fetch error on chunk %d: %s — skipping", chunk_n, exc)
 
@@ -160,7 +161,7 @@ def _fetch_15m_candles(symbol: str, days: int) -> pd.DataFrame:
             .reset_index(drop=True))
 
     print(f"  Total: {len(df):,} candles  "
-          f"[{_ts_str(df['timestamp'].iloc[0])} → "
+          f"[{_ts_str(df['timestamp'].iloc[0])} to "
           f"{_ts_str(df['timestamp'].iloc[-1])}]", flush=True)
     return df
 
@@ -202,10 +203,14 @@ def _simulate_trade(
     Conservative fill order within a bar: SL is checked before TP.
     This slightly underestimates win rate, consistent with real execution.
 
+    Matches the live paper engine: once a bar reaches +1R the stop moves to
+    breakeven (applied from the NEXT bar — conservative, no intra-bar ordering
+    assumption), so a +1R trade that fully reverses scratches instead of -1R.
+
     Returns
     -------
     (result, exit_price, bars_held, pnl_r)
-    result  : 'WIN' | 'LOSS' | 'TIMEOUT'
+    result  : 'WIN' | 'LOSS' | 'BREAKEVEN' | 'TIMEOUT'
     pnl_r   : R-multiple (negative for losses, positive for wins)
     """
     risk = abs(entry - stop_loss)
@@ -213,21 +218,30 @@ def _simulate_trade(
         return "LOSS", stop_loss, 0, -1.0
 
     end_i = min(signal_i + max_bars + 1, len(df_15m))
+    stop  = stop_loss
 
     for j in range(signal_i + 1, end_i):
         bar_high = float(df_15m.iloc[j]["high"])
         bar_low  = float(df_15m.iloc[j]["low"])
 
         if direction == "LONG":
-            if bar_low  <= stop_loss:
-                return "LOSS", stop_loss, j - signal_i, -1.0
+            if bar_low  <= stop:
+                if stop >= entry:
+                    return "BREAKEVEN", stop, j - signal_i, 0.0
+                return "LOSS", stop, j - signal_i, -1.0
             if bar_high >= tp1:
                 return "WIN", tp1, j - signal_i, round((tp1 - entry) / risk, 3)
+            if bar_high >= entry + risk and stop < entry:
+                stop = entry
         else:   # SHORT
-            if bar_high >= stop_loss:
-                return "LOSS", stop_loss, j - signal_i, -1.0
+            if bar_high >= stop:
+                if stop <= entry:
+                    return "BREAKEVEN", stop, j - signal_i, 0.0
+                return "LOSS", stop, j - signal_i, -1.0
             if bar_low  <= tp1:
                 return "WIN", tp1, j - signal_i, round((entry - tp1) / risk, 3)
+            if bar_low <= entry - risk and stop > entry:
+                stop = entry
 
     # Timeout — exit at last-bar close
     close_bar = min(signal_i + max_bars, len(df_15m) - 1)
@@ -269,7 +283,7 @@ def run_backtest(
     total_bars  = len(df_15m)
     prev_pct    = -1
 
-    print(f"\nWalk-forward simulation on {total_bars:,} 15m bars …", flush=True)
+    print(f"\nWalk-forward simulation on {total_bars:,} 15m bars...", flush=True)
 
     for i in range(_WARMUP_BARS, total_bars - 1):
         # Progress indicator
@@ -288,9 +302,13 @@ def run_backtest(
         # Build per-timeframe windows ending at current bar (no look-ahead)
         w15 = df_15m.iloc[max(0, i - 300): i + 1].reset_index(drop=True)
 
-        # Higher-TF: include bars whose open timestamp <= current 15m bar open
-        idx_1h = int((df_1h["timestamp"].values <= current_ts).sum())
-        idx_4h = int((df_4h["timestamp"].values <= current_ts).sum())
+        # Higher-TF: only FULLY CLOSED bars. A bar opening at T closes at
+        # T + duration; the signal fires at the current 15m bar close
+        # (current_ts + 900). Including the in-progress 1h/4h bar leaked
+        # future data into the indicators (look-ahead bias).
+        bar_close_ts = current_ts + 900
+        idx_1h = int((df_1h["timestamp"].values + 3600  <= bar_close_ts).sum())
+        idx_4h = int((df_4h["timestamp"].values + 14400 <= bar_close_ts).sum())
         w1h = df_1h.iloc[max(0, idx_1h - 250): idx_1h].reset_index(drop=True)
         w4h = df_4h.iloc[max(0, idx_4h - 300): idx_4h].reset_index(drop=True)
 
@@ -311,7 +329,7 @@ def run_backtest(
         smc_data  = {
             "order_blocks":     ob_list,
             "fair_value_gaps":  fvg_list,         # key matches strategy.py expectation
-            "liquidity_sweeps": detect_liquidity_sweeps(w15, []),  # ditto
+            "liquidity_sweeps": detect_liquidity_sweeps(w15, find_swing_points(w15)),
             "zones":            get_institutional_zones(ob_list, fvg_list),
         }
 
@@ -352,10 +370,11 @@ def run_backtest(
         skip_until = i + bars_held   # block re-entry until trade closes
 
     # ---- Statistics ----
-    wins     = [t for t in trades if t.result == "WIN"]
-    losses   = [t for t in trades if t.result == "LOSS"]
-    timeouts = [t for t in trades if t.result == "TIMEOUT"]
-    n        = len(trades)
+    wins       = [t for t in trades if t.result == "WIN"]
+    losses     = [t for t in trades if t.result == "LOSS"]
+    breakevens = [t for t in trades if t.result == "BREAKEVEN"]
+    timeouts   = [t for t in trades if t.result == "TIMEOUT"]
+    n          = len(trades)
 
     win_rate     = round(len(wins) / n * 100, 1)             if n         else 0.0
     avg_rr       = round(sum(t.pnl_r for t in trades) / n, 3) if n         else 0.0
@@ -381,6 +400,7 @@ def run_backtest(
         total_trades       = n,
         wins               = len(wins),
         losses             = len(losses),
+        breakevens         = len(breakevens),
         timeouts           = len(timeouts),
         win_rate_pct       = win_rate,
         avg_rr             = avg_rr,
@@ -399,16 +419,17 @@ def run_backtest(
 # ---------------------------------------------------------------------------
 
 def _print_report(r: BacktestResult) -> None:
-    bar = "─" * 52
+    bar = "-" * 52
     print(f"\n{bar}")
-    print(f"  BACKTEST  {r.symbol}  •  {r.period_days}d")
+    print(f"  BACKTEST  {r.symbol}  |  {r.period_days}d")
     print(bar)
-    print(f"  Period          {r.start_date}  →  {r.end_date}")
+    print(f"  Period          {r.start_date}  to  {r.end_date}")
     print(f"  Bars scanned    {r.total_bars_scanned:,}")
     print(f"  Total trades    {r.total_trades}")
     if r.total_trades:
         print(f"  Wins            {r.wins}  ({r.win_rate_pct:.1f}%)")
         print(f"  Losses          {r.losses}")
+        print(f"  Breakevens      {r.breakevens}")
         print(f"  Timeouts        {r.timeouts}")
         print(bar)
         print(f"  Average R       {r.avg_rr:+.3f}")
@@ -425,7 +446,8 @@ def _print_report(r: BacktestResult) -> None:
         if recent:
             print(f"\n  Last {len(recent)} trades:")
             for t in recent:
-                icon = "✓" if t["result"] == "WIN" else ("✗" if t["result"] == "LOSS" else "⏱")
+                icons = {"WIN": "W", "LOSS": "L", "BREAKEVEN": "B"}
+                icon = icons.get(t["result"], "T")
                 print(
                     f"    {icon}  {t['timestamp']}  {t['direction']:<5}  "
                     f"entry={t['entry']:>9.2f}  sl={t['stop_loss']:>9.2f}  "

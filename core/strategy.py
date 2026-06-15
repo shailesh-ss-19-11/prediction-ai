@@ -81,17 +81,18 @@ class TradeSetup:
 
 def _has_volume_spike(df_15m: Optional[pd.DataFrame], direction: str = "") -> bool:
     """
-    Return True when the last COMPLETED candle has a volume spike in the trade direction.
+    Return True when the last candle has a volume spike in the trade direction.
 
-    Uses iloc[-2] (previous closed candle) — the current candle is still forming.
+    The caller must pass CLOSED candles only (main.py drops the forming candle
+    before evaluation), so iloc[-1] is the most recent completed candle.
     Also checks that the spike candle's close confirms direction (bearish candle for SHORT,
     bullish candle for LONG) so a reversal-bounce spike doesn't pass for the wrong side.
     """
-    if df_15m is None or len(df_15m) < _VOLUME_LOOKBACK + 2:
+    if df_15m is None or len(df_15m) < _VOLUME_LOOKBACK + 1:
         return False
     vol    = df_15m["volume"].astype(float)
-    recent = float(vol.iloc[-2])
-    avg    = float(vol.iloc[-(_VOLUME_LOOKBACK + 2):-2].mean())
+    recent = float(vol.iloc[-1])
+    avg    = float(vol.iloc[-(_VOLUME_LOOKBACK + 1):-1].mean())
     if avg == 0:
         return False
     if recent <= _VOLUME_SPIKE_MULT * avg:
@@ -99,7 +100,7 @@ def _has_volume_spike(df_15m: Optional[pd.DataFrame], direction: str = "") -> bo
 
     # Volume is high — verify the candle closed in the trade direction
     if direction:
-        candle = df_15m.iloc[-2]
+        candle = df_15m.iloc[-1]
         if direction == "LONG"  and float(candle["close"]) < float(candle["open"]):
             return False   # spike on a bearish candle — don't use for LONG entry
         if direction == "SHORT" and float(candle["close"]) > float(candle["open"]):
@@ -177,17 +178,25 @@ def _nearest_swing_high(df: pd.DataFrame, entry: float, atr: float) -> float:
     return entry + _SL_ATR_MULT * atr
 
 
-def _is_price_near_key_level(df: pd.DataFrame, entry: float) -> bool:
+def _is_price_near_key_level(df: pd.DataFrame, entry: float, direction: str) -> bool:
     """
     Return True only when the current price is within _PROXIMITY_FILTER_PCT
-    of at least one structural swing point (support or resistance).
+    of a structural swing point on the side that favours the trade:
+      LONG  → near a swing LOW  (support — room to run, SL behind the level)
+      SHORT → near a swing HIGH (resistance — same logic mirrored)
+    A direction-blind check let shorts fire right at support (and longs at
+    resistance), which is exactly where reversals stop trades out.
     Trades from the middle of a range return False.
     """
     if df is None or len(df) < 11:
         return False
     window = df.iloc[-50:] if len(df) >= 50 else df
     swing_pts = find_swing_points(window, lookback=5)
-    for sp in swing_pts:
+    if direction == "LONG":
+        relevant = [sp for sp in swing_pts if sp.swing_type in ("low", "HL", "LL")]
+    else:
+        relevant = [sp for sp in swing_pts if sp.swing_type in ("high", "HH", "LH")]
+    for sp in relevant:
         if abs(entry - sp.price) / entry <= _PROXIMITY_FILTER_PCT:
             return True
     return False
@@ -384,17 +393,14 @@ class TrendStrategy:
             conditions_passed += 1
             reasons.append(f"15m RSI {rsi_15m:.1f} in buy zone [50–65]")
 
-        # 4. Bullish pattern on the PREVIOUS completed candle (iloc[-2])
-        #    Patterns on the current forming candle (iloc[-1]) are unreliable — the
-        #    candle hasn't closed yet and may not complete as that pattern.
+        # 4. Bullish pattern on the most recent COMPLETED candle.
+        #    Callers pass closed candles only, and `patterns` was detected on
+        #    that data — so the pattern is confirmed, not from a forming candle.
         best_bullish_pattern: Optional[CandlePattern] = None
-        if df_15m is not None and len(df_15m) >= 2:
-            from core.patterns import detect_all as _detect_all
-            confirmed_patterns = _detect_all(df_15m.iloc[:-1])   # exclude live candle
-            for p in confirmed_patterns:
-                if p.direction == "bullish" and p.confidence >= 0.60:
-                    best_bullish_pattern = p
-                    break
+        for p in patterns:
+            if p.direction == "bullish" and p.confidence >= 0.60:
+                best_bullish_pattern = p
+                break
         c4_ok = best_bullish_pattern is not None
         if c4_ok:
             conditions_passed += 1
@@ -443,10 +449,11 @@ class TrendStrategy:
             )
             return None
 
-        # Pre-trade proximity filter: skip trades fired from the middle of a range.
-        if not _is_price_near_key_level(df_15m, close):
+        # Pre-trade proximity filter: skip trades fired from the middle of a range
+        # or at the wrong side of the range (longs must be near support).
+        if not _is_price_near_key_level(df_15m, close, "LONG"):
             logger.debug(
-                "[Strategy] %s LONG: price %.4f not within %.1f%% of a key level — skipping.",
+                "[Strategy] %s LONG: price %.4f not within %.1f%% of support — skipping.",
                 symbol, close, _PROXIMITY_FILTER_PCT * 100,
             )
             return None
@@ -552,15 +559,12 @@ class TrendStrategy:
             conditions_passed += 1
             reasons.append(f"15m RSI {rsi_15m:.1f} in sell zone [35–50]")
 
-        # 4. Bearish pattern on the PREVIOUS completed candle (iloc[-2])
+        # 4. Bearish pattern on the most recent COMPLETED candle (see LONG note).
         best_bearish_pattern: Optional[CandlePattern] = None
-        if df_15m is not None and len(df_15m) >= 2:
-            from core.patterns import detect_all as _detect_all
-            confirmed_patterns = _detect_all(df_15m.iloc[:-1])   # exclude live candle
-            for p in confirmed_patterns:
-                if p.direction == "bearish" and p.confidence >= 0.60:
-                    best_bearish_pattern = p
-                    break
+        for p in patterns:
+            if p.direction == "bearish" and p.confidence >= 0.60:
+                best_bearish_pattern = p
+                break
         c4_ok = best_bearish_pattern is not None
         if c4_ok:
             conditions_passed += 1
@@ -609,10 +613,11 @@ class TrendStrategy:
             )
             return None
 
-        # Pre-trade proximity filter: skip trades fired from the middle of a range.
-        if not _is_price_near_key_level(df_15m, close):
+        # Pre-trade proximity filter: skip trades fired from the middle of a range
+        # or at the wrong side of the range (shorts must be near resistance).
+        if not _is_price_near_key_level(df_15m, close, "SHORT"):
             logger.debug(
-                "[Strategy] %s SHORT: price %.4f not within %.1f%% of a key level — skipping.",
+                "[Strategy] %s SHORT: price %.4f not within %.1f%% of resistance — skipping.",
                 symbol, close, _PROXIMITY_FILTER_PCT * 100,
             )
             return None

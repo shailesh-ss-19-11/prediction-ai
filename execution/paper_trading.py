@@ -38,6 +38,7 @@ class PaperTrade:
     exit_price: Optional[float] = None
     pnl: float = 0.0
     exit_reason: str = ""
+    initial_sl: Optional[float] = None   # SL at entry; stop_loss may move to breakeven
 
 
 # ---------------------------------------------------------------------------
@@ -104,6 +105,7 @@ class PaperTradingEngine:
             size=size,
             status="open",
             opened_at=datetime.now(timezone.utc).isoformat(),
+            initial_sl=sl,
         )
         self._open_trades[trade_id] = trade
 
@@ -117,6 +119,9 @@ class PaperTradingEngine:
         """
         Check all open trades against current market prices and close
         those that have hit their SL or TP levels.
+
+        Once a trade reaches +1R unrealised profit, its stop is moved to
+        breakeven (entry) so a full reversal scratches instead of losing 1R.
 
         Parameters
         ----------
@@ -136,10 +141,22 @@ class PaperTradingEngine:
 
             direction = trade.direction
 
+            # Trades persisted before initial_sl existed
+            if trade.initial_sl is None:
+                trade.initial_sl = trade.stop_loss
+
+            risk = abs(trade.entry - trade.initial_sl)
+
             if direction == "LONG":
+                # Breakeven: lock the stop at entry once price is +1R
+                if risk > 0 and price >= trade.entry + risk and trade.stop_loss < trade.entry:
+                    trade.stop_loss = trade.entry
+                    logger.info("[Paper] BREAKEVEN %s %s — SL moved to entry %.4f | id=%s",
+                                direction, trade.symbol, trade.entry, trade_id)
                 # SL hit
                 if price <= trade.stop_loss:
-                    to_close.append((trade_id, trade.stop_loss, "sl"))
+                    reason = "breakeven" if trade.stop_loss >= trade.entry else "sl"
+                    to_close.append((trade_id, trade.stop_loss, reason))
                 # TP2 hit
                 elif price >= trade.tp2:
                     to_close.append((trade_id, trade.tp2, "tp2"))
@@ -148,8 +165,13 @@ class PaperTradingEngine:
                     to_close.append((trade_id, trade.tp1, "tp1"))
 
             else:  # SHORT
+                if risk > 0 and price <= trade.entry - risk and trade.stop_loss > trade.entry:
+                    trade.stop_loss = trade.entry
+                    logger.info("[Paper] BREAKEVEN %s %s — SL moved to entry %.4f | id=%s",
+                                direction, trade.symbol, trade.entry, trade_id)
                 if price >= trade.stop_loss:
-                    to_close.append((trade_id, trade.stop_loss, "sl"))
+                    reason = "breakeven" if trade.stop_loss <= trade.entry else "sl"
+                    to_close.append((trade_id, trade.stop_loss, reason))
                 elif price <= trade.tp2:
                     to_close.append((trade_id, trade.tp2, "tp2"))
                 elif price <= trade.tp1:

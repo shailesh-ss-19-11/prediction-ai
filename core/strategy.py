@@ -16,7 +16,7 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 
-from core.indicators import IndicatorResult
+from core.indicators import IndicatorResult, calculate_all
 from core.market_structure import find_swing_points
 from core.patterns import CandlePattern
 from core.smc import OrderBlock, FairValueGap, LiquiditySweep
@@ -24,7 +24,7 @@ from core.smc import OrderBlock, FairValueGap, LiquiditySweep
 logger = logging.getLogger(__name__)
 
 # Minimum conditions that must pass (out of 7) to emit a signal
-_MIN_CONDITIONS = 6
+_MIN_CONDITIONS = 5
 
 # ATR multiplier for the minimum SL distance from entry AND for the buffer
 # placed below/above the structural swing point.
@@ -35,7 +35,7 @@ _MIN_SL_PCT = 0.008
 
 # Price must be within this fraction of a key swing level to allow entry.
 # Trades fired from the middle of a range are blocked.
-_PROXIMITY_FILTER_PCT = 0.005
+_PROXIMITY_FILTER_PCT = 0.01
 
 # How many 15m bars to look back for the structural swing low/high used as SL.
 _SWING_SL_LOOKBACK = 20
@@ -46,11 +46,11 @@ _MIN_RR = 2.0
 # Candle lookback for volume average
 _VOLUME_LOOKBACK = 20
 
-# Volume spike threshold
-_VOLUME_SPIKE_MULT = 1.5
+# Volume spike threshold — lowered from 1.5 to 1.2 so moderate spikes count
+_VOLUME_SPIKE_MULT = 1.2
 
 # Minimum 4h trend_strength (0-1) required before accepting the structure bias
-_MIN_TREND_STRENGTH = 0.5
+_MIN_TREND_STRENGTH = 0.3
 
 
 # ---------------------------------------------------------------------------
@@ -313,12 +313,30 @@ class TrendStrategy:
         Both are checked so BUY and SELL signals can fire on the same scan.
         """
         df_15m = mtf_data.get("15m")
+        df_1d  = mtf_data.get("1d")
         atr    = _current_atr(indicators_15m)
         close  = _current_close(df_15m)
 
         if math.isnan(close) or close == 0 or atr == 0:
             logger.debug("[Strategy] %s: insufficient price / ATR data.", symbol)
             return []
+
+        # Hard macro gate: daily EMA20 vs EMA50 determines which direction is
+        # allowed.  This prevents buying into a falling macro trend or shorting
+        # into a rising one — the main reason BTC produced losses in backtest.
+        daily_long_ok  = True   # default: allow if no daily data
+        daily_short_ok = True
+        if df_1d is not None and len(df_1d) >= 50:
+            ind_1d = calculate_all(df_1d)
+            if not math.isnan(ind_1d.ema_20) and not math.isnan(ind_1d.ema_50):
+                daily_long_ok  = ind_1d.ema_20 > ind_1d.ema_50   # daily uptrend
+                daily_short_ok = ind_1d.ema_20 < ind_1d.ema_50   # daily downtrend
+                logger.debug(
+                    "[Strategy] %s daily gate: EMA20=%.2f EMA50=%.2f "
+                    "long_ok=%s short_ok=%s",
+                    symbol, ind_1d.ema_20, ind_1d.ema_50,
+                    daily_long_ok, daily_short_ok,
+                )
 
         kwargs = dict(
             symbol=symbol, df_15m=df_15m,
@@ -332,11 +350,19 @@ class TrendStrategy:
         )
 
         setups = []
-        long_setup  = self._evaluate_long(**kwargs)
-        short_setup = self._evaluate_short(**kwargs)
+        if daily_long_ok:
+            long_setup = self._evaluate_long(**kwargs)
+            if long_setup is not None:
+                setups.append(long_setup)
+        else:
+            logger.debug("[Strategy] %s LONG blocked by daily downtrend gate.", symbol)
 
-        if long_setup  is not None: setups.append(long_setup)
-        if short_setup is not None: setups.append(short_setup)
+        if daily_short_ok:
+            short_setup = self._evaluate_short(**kwargs)
+            if short_setup is not None:
+                setups.append(short_setup)
+        else:
+            logger.debug("[Strategy] %s SHORT blocked by daily uptrend gate.", symbol)
 
         return setups
 
@@ -386,12 +412,12 @@ class TrendStrategy:
                 f"1h EMA20 ({indicators_1h.ema_20:.4f}) > EMA50 ({indicators_1h.ema_50:.4f})"
             )
 
-        # 3. RSI 50–65 on 15m — momentum clearly bullish, not just neutral
+        # 3. RSI 45–75 on 15m — momentum bullish (wider band covers strong uptrends)
         rsi_15m = indicators_15m.rsi_14
-        c3_ok = not math.isnan(rsi_15m) and 50.0 <= rsi_15m <= 65.0
+        c3_ok = not math.isnan(rsi_15m) and 45.0 <= rsi_15m <= 75.0
         if c3_ok:
             conditions_passed += 1
-            reasons.append(f"15m RSI {rsi_15m:.1f} in buy zone [50–65]")
+            reasons.append(f"15m RSI {rsi_15m:.1f} in buy zone [45–75]")
 
         # 4. Bullish pattern on the most recent COMPLETED candle.
         #    Callers pass closed candles only, and `patterns` was detected on
@@ -552,12 +578,12 @@ class TrendStrategy:
                 f"1h EMA20 ({indicators_1h.ema_20:.4f}) < EMA50 ({indicators_1h.ema_50:.4f})"
             )
 
-        # 3. RSI 35–50 on 15m — momentum clearly bearish, not just neutral
+        # 3. RSI 25–55 on 15m — momentum bearish (wider band covers strong downtrends)
         rsi_15m = indicators_15m.rsi_14
-        c3_ok = not math.isnan(rsi_15m) and 35.0 <= rsi_15m <= 50.0
+        c3_ok = not math.isnan(rsi_15m) and 25.0 <= rsi_15m <= 55.0
         if c3_ok:
             conditions_passed += 1
-            reasons.append(f"15m RSI {rsi_15m:.1f} in sell zone [35–50]")
+            reasons.append(f"15m RSI {rsi_15m:.1f} in sell zone [25–55]")
 
         # 4. Bearish pattern on the most recent COMPLETED candle (see LONG note).
         best_bearish_pattern: Optional[CandlePattern] = None

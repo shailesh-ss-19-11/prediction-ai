@@ -273,6 +273,7 @@ def run_backtest(
 
     df_1h = _resample_15m(df_15m, "1h")
     df_4h = _resample_15m(df_15m, "4h")
+    df_1d = _resample_15m(df_15m, "1D")
 
     strategy    = TrendStrategy()
     balance     = initial_balance
@@ -307,10 +308,12 @@ def run_backtest(
         # (current_ts + 900). Including the in-progress 1h/4h bar leaked
         # future data into the indicators (look-ahead bias).
         bar_close_ts = current_ts + 900
-        idx_1h = int((df_1h["timestamp"].values + 3600  <= bar_close_ts).sum())
-        idx_4h = int((df_4h["timestamp"].values + 14400 <= bar_close_ts).sum())
+        idx_1h = int((df_1h["timestamp"].values + 3600   <= bar_close_ts).sum())
+        idx_4h = int((df_4h["timestamp"].values + 14400  <= bar_close_ts).sum())
+        idx_1d = int((df_1d["timestamp"].values + 86400  <= bar_close_ts).sum())
         w1h = df_1h.iloc[max(0, idx_1h - 250): idx_1h].reset_index(drop=True)
         w4h = df_4h.iloc[max(0, idx_4h - 300): idx_4h].reset_index(drop=True)
+        w1d = df_1d.iloc[max(0, idx_1d - 200): idx_1d].reset_index(drop=True)
 
         # Need enough data for all indicators
         if len(w1h) < 30 or len(w4h) < 20:
@@ -333,7 +336,7 @@ def run_backtest(
             "zones":            get_institutional_zones(ob_list, fvg_list),
         }
 
-        mtf    = {"15m": w15, "1h": w1h, "4h": w4h}
+        mtf    = {"15m": w15, "1h": w1h, "4h": w4h, "1d": w1d}
         setups = strategy.evaluate(
             symbol, mtf, ind_15m, ind_1h, ind_4h,
             patterns, structure, smc_data,

@@ -3076,3 +3076,64 @@
 2026-06-01 18:42:17 [DEBUG] core.strategy — [Strategy] XAUTUSD SHORT: only 3/7 conditions met.
 2026-06-01 18:42:17 [INFO] main — XAUTUSD $4,478.00 | trend:bearish | bias:bullish | RSI:32.8 | no setup
 2026-06-01 18:42:17 [INFO] main — === Scan complete in 4.0s ===
+2026-06-17 12:23:31 [INFO] execution.paper_trading — [Paper] Loaded 2 open / 0 closed trades from paper_trades.json.
+2026-06-17 12:23:31 [INFO] exchanges.ws_stream — WebSocket stream started for ['BTCUSD', 'ETHUSD', 'XAUTUSD']
+2026-06-17 12:23:31 [INFO] main — Waiting 3s for WebSocket to connect...
+2026-06-17 12:23:33 [INFO] websocket — Websocket connected
+2026-06-17 12:23:33 [INFO] exchanges.ws_stream — WebSocket connected — subscribing to tickers
+2026-06-17 12:23:33 [INFO] werkzeug — [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.15.0.162:5000
+2026-06-17 12:23:33 [INFO] werkzeug — [33mPress CTRL+C to quit[0m
+2026-06-17 12:23:34 [DEBUG] urllib3.connectionpool — Starting new HTTPS connection (1): api.telegram.org:443
+2026-06-17 12:23:45 [WARNING] notifications.telegram — Telegram chat_id=1948356544 attempt 1/3 failed: HTTPSConnectionPool(host='api.telegram.org', port=443): Max retries exceeded with url: /bot8800960300:AAExwJ0q7WkWipz2RkvKw9-4Y28ePM5TAUc/sendMessage (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x000001D2F0B08C50>, 'Connection to api.telegram.org timed out. (connect timeout=10)'))
+2026-06-17 12:23:50 [DEBUG] urllib3.connectionpool — Starting new HTTPS connection (1): api.telegram.org:443
+2026-06-17 12:24:00 [WARNING] notifications.telegram — Telegram chat_id=1948356544 attempt 2/3 failed: HTTPSConnectionPool(host='api.telegram.org', port=443): Max retries exceeded with url: /bot8800960300:AAExwJ0q7WkWipz2RkvKw9-4Y28ePM5TAUc/sendMessage (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x000001D2F0B0AC10>, 'Connection to api.telegram.org timed out. (connect timeout=10)'))
+2026-06-17 12:24:05 [DEBUG] urllib3.connectionpool — Starting new HTTPS connection (1): api.telegram.org:443
+2026-06-17 12:24:15 [WARNING] notifications.telegram — Telegram chat_id=1948356544 attempt 3/3 failed: HTTPSConnectionPool(host='api.telegram.org', port=443): Max retries exceeded with url: /bot8800960300:AAExwJ0q7WkWipz2RkvKw9-4Y28ePM5TAUc/sendMessage (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x000001D2EEB25290>, 'Connection to api.telegram.org timed out. (connect timeout=10)'))
+2026-06-17 12:24:15 [ERROR] notifications.telegram — Telegram message failed for chat_id=1948356544 after 3 attempts
+2026-06-17 12:24:15 [DEBUG] urllib3.connectionpool — Starting new HTTPS connection (1): api.telegram.org:443
+2026-06-17 12:24:25 [WARNING] notifications.telegram — Telegram chat_id=7151542571 attempt 1/3 failed: HTTPSConnectionPool(host='api.telegram.org', port=443): Max retries exceeded with url: /bot8800960300:AAExwJ0q7WkWipz2RkvKw9-4Y28ePM5TAUc/sendMessage (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x000001D2F0B08090>, 'Connection to api.telegram.org timed out. (connect timeout=10)'))
+2026-06-17 12:24:30 [DEBUG] urllib3.connectionpool — Starting new HTTPS connection (1): api.telegram.org:443
+2026-06-17 12:24:33 [DEBUG] websocket — Sending ping
+2026-06-17 12:24:40 [WARNING] notifications.telegram — Telegram chat_id=7151542571 attempt 2/3 failed: HTTPSConnectionPool(host='api.telegram.org', port=443): Max retries exceeded with url: /bot8800960300:AAExwJ0q7WkWipz2RkvKw9-4Y28ePM5TAUc/sendMessage (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x000001D2F0E80A10>, 'Connection to api.telegram.org timed out. (connect timeout=10)'))
+2026-06-17 12:24:45 [DEBUG] urllib3.connectionpool — Starting new HTTPS connection (1): api.telegram.org:443
+2026-06-17 12:24:55 [WARNING] notifications.telegram — Telegram chat_id=7151542571 attempt 3/3 failed: HTTPSConnectionPool(host='api.telegram.org', port=443): Max retries exceeded with url: /bot8800960300:AAExwJ0q7WkWipz2RkvKw9-4Y28ePM5TAUc/sendMessage (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x000001D2F0E82E10>, 'Connection to api.telegram.org timed out. (connect timeout=10)'))
+2026-06-17 12:24:55 [ERROR] notifications.telegram — Telegram message failed for chat_id=7151542571 after 3 attempts
+2026-06-17 12:24:55 [INFO] main — === Scan started | symbols=['BTCUSD', 'ETHUSD', 'XAUTUSD'] ===
+2026-06-17 12:24:55 [INFO] core.market_data — [MarketData] Fetching BTCUSD 1m (20 candles)…
+2026-06-17 12:24:55 [DEBUG] urllib3.connectionpool — Starting new HTTPS connection (1): api.india.delta.exchange:443
+2026-06-17 12:24:55 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1m&symbol=BTCUSD&start=1781677795&end=1781679295 HTTP/1.1" 200 None
+2026-06-17 12:24:55 [INFO] core.market_data — [MarketData] Cached 20 candles for BTCUSD 1m
+2026-06-17 12:24:55 [INFO] core.market_data — [MarketData] Fetching ETHUSD 1m (20 candles)…
+2026-06-17 12:24:56 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1m&symbol=ETHUSD&start=1781677795&end=1781679295 HTTP/1.1" 200 None
+2026-06-17 12:24:56 [INFO] core.market_data — [MarketData] Cached 20 candles for ETHUSD 1m
+2026-06-17 12:24:56 [INFO] core.market_data — [MarketData] Fetching XAUTUSD 1m (20 candles)…
+2026-06-17 12:24:56 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1m&symbol=XAUTUSD&start=1781677796&end=1781679296 HTTP/1.1" 200 None
+2026-06-17 12:24:56 [INFO] core.market_data — [MarketData] Cached 20 candles for XAUTUSD 1m
+2026-06-17 12:24:56 [DEBUG] main — Live prices: {'BTCUSD': '65,608.50', 'ETHUSD': '1,789.00', 'XAUTUSD': '4,313.21'}
+2026-06-17 12:24:56 [INFO] execution.paper_trading — [Paper] BREAKEVEN SHORT BTCUSD — SL moved to entry 73191.0000 | id=04e7aa4f
+2026-06-17 12:24:56 [INFO] execution.paper_trading — [Paper] BREAKEVEN SHORT ETHUSD — SL moved to entry 1987.5000 | id=c588ba20
+2026-06-17 12:24:56 [INFO] execution.paper_trading — [Paper] CLOSE SHORT BTCUSD @ 71716.7023 | PnL $3.0002 | reason=tp2 | id=04e7aa4f
+2026-06-17 12:24:56 [INFO] execution.paper_trading — [Paper] CLOSE SHORT ETHUSD @ 1928.9949 | PnL $3.0000 | reason=tp2 | id=c588ba20
+2026-06-17 12:24:56 [INFO] execution.paper_trading — [Paper] State saved to paper_trades.json.
+2026-06-17 12:24:56 [INFO] main — Paper trades closed this scan: 2
+2026-06-17 12:24:56 [DEBUG] trade_journal — [Journal] Saved 3 records to trade_records.json
+2026-06-17 12:24:56 [INFO] trade_journal — [Journal] Recorded CLOSE — id=04e7aa4f | TP2 hit | exit=71716.7023 | PnL=$3.0002
+2026-06-17 12:24:56 [INFO] notifications.telegram — Paper trade closed: BTCUSD SHORT | reason=tp2 | PnL=$3.00
+2026-06-17 12:24:56 [DEBUG] urllib3.connectionpool — Starting new HTTPS connection (1): api.telegram.org:443
+2026-06-17 12:25:03 [DEBUG] websocket — Sending ping
+2026-06-17 12:25:06 [WARNING] notifications.telegram — Telegram chat_id=1948356544 attempt 1/3 failed: HTTPSConnectionPool(host='api.telegram.org', port=443): Max retries exceeded with url: /bot8800960300:AAExwJ0q7WkWipz2RkvKw9-4Y28ePM5TAUc/sendMessage (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x000001D2F0E80F50>, 'Connection to api.telegram.org timed out. (connect timeout=10)'))
+2026-06-17 12:25:11 [DEBUG] urllib3.connectionpool — Starting new HTTPS connection (1): api.telegram.org:443
+2026-06-17 12:25:21 [WARNING] notifications.telegram — Telegram chat_id=1948356544 attempt 2/3 failed: HTTPSConnectionPool(host='api.telegram.org', port=443): Max retries exceeded with url: /bot8800960300:AAExwJ0q7WkWipz2RkvKw9-4Y28ePM5TAUc/sendMessage (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x000001D2F0E82050>, 'Connection to api.telegram.org timed out. (connect timeout=10)'))
+2026-06-17 12:25:26 [DEBUG] urllib3.connectionpool — Starting new HTTPS connection (1): api.telegram.org:443
+2026-06-17 12:25:33 [DEBUG] websocket — Sending ping
+2026-06-17 12:25:36 [WARNING] notifications.telegram — Telegram chat_id=1948356544 attempt 3/3 failed: HTTPSConnectionPool(host='api.telegram.org', port=443): Max retries exceeded with url: /bot8800960300:AAExwJ0q7WkWipz2RkvKw9-4Y28ePM5TAUc/sendMessage (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x000001D2F0B0AE10>, 'Connection to api.telegram.org timed out. (connect timeout=10)'))
+2026-06-17 12:25:36 [ERROR] notifications.telegram — Telegram message failed for chat_id=1948356544 after 3 attempts
+2026-06-17 12:25:36 [DEBUG] urllib3.connectionpool — Starting new HTTPS connection (1): api.telegram.org:443
+2026-06-17 12:25:46 [WARNING] notifications.telegram — Telegram chat_id=7151542571 attempt 1/3 failed: HTTPSConnectionPool(host='api.telegram.org', port=443): Max retries exceeded with url: /bot8800960300:AAExwJ0q7WkWipz2RkvKw9-4Y28ePM5TAUc/sendMessage (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x000001D2F0E89E90>, 'Connection to api.telegram.org timed out. (connect timeout=10)'))
+2026-06-17 12:25:51 [DEBUG] urllib3.connectionpool — Starting new HTTPS connection (1): api.telegram.org:443
+2026-06-17 12:26:01 [WARNING] notifications.telegram — Telegram chat_id=7151542571 attempt 2/3 failed: HTTPSConnectionPool(host='api.telegram.org', port=443): Max retries exceeded with url: /bot8800960300:AAExwJ0q7WkWipz2RkvKw9-4Y28ePM5TAUc/sendMessage (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x000001D2F0E8B890>, 'Connection to api.telegram.org timed out. (connect timeout=10)'))
+2026-06-17 12:26:03 [DEBUG] websocket — Sending ping
+2026-06-17 12:26:06 [DEBUG] urllib3.connectionpool — Starting new HTTPS connection (1): api.telegram.org:443

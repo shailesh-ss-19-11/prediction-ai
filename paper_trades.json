@@ -1,39 +1,41 @@
 {
   "initial_balance": 100,
-  "current_balance": 100,
-  "open_trades": [
+  "current_balance": 106.00022105384765,
+  "open_trades": [],
+  "closed_trades": [
     {
       "id": "04e7aa4f",
       "symbol": "BTCUSD",
       "direction": "SHORT",
       "entry": 73191.0,
-      "stop_loss": 73682.43258089,
+      "stop_loss": 73191.0,
       "tp1": 72208.13483821,
       "tp2": 71716.70225732,
       "size": 0.002035,
-      "status": "open",
+      "status": "closed",
       "opened_at": "2026-06-01T06:33:54.345722+00:00",
-      "closed_at": null,
-      "exit_price": null,
-      "pnl": 0.0,
-      "exit_reason": ""
+      "closed_at": "2026-06-17T06:54:56.569758+00:00",
+      "exit_price": 71716.70225732,
+      "pnl": 3.000196,
+      "exit_reason": "tp2",
+      "initial_sl": 73682.43258089
     },
     {
       "id": "c588ba20",
       "symbol": "ETHUSD",
       "direction": "SHORT",
       "entry": 1987.5,
-      "stop_loss": 2007.00170409,
+      "stop_loss": 1987.5,
       "tp1": 1948.49659181,
       "tp2": 1928.99488772,
       "size": 0.051278,
-      "status": "open",
+      "status": "closed",
       "opened_at": "2026-06-01T06:33:56.764183+00:00",
-      "closed_at": null,
-      "exit_price": null,
-      "pnl": 0.0,
-      "exit_reason": ""
+      "closed_at": "2026-06-17T06:54:56.570633+00:00",
+      "exit_price": 1928.99488772,
+      "pnl": 3.000025,
+      "exit_reason": "tp2",
+      "initial_sl": 2007.00170409
     }
-  ],
-  "closed_trades": []
+  ]
 }

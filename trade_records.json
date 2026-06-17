@@ -20,14 +20,14 @@
       "15m MACD bearish (line=-120.7456 < sig=-78.0130, hist=-42.7326)"
     ],
     "opened_at": "2026-06-01T06:33:55.741167+00:00",
-    "status": "open",
-    "closed_at": null,
-    "exit_price": null,
-    "exit_reason": null,
-    "pnl": null,
+    "status": "closed",
+    "closed_at": "2026-06-17T06:54:56.576558+00:00",
+    "exit_price": 71716.70225732,
+    "exit_reason": "tp2",
+    "pnl": 3.000196,
     "sl_hit": false,
     "tp1_hit": false,
-    "tp2_hit": false
+    "tp2_hit": true
   },
   {
     "id": "c588ba20",
@@ -90,4 +90,3 @@
     "tp2_hit": false
   }
 ]
-

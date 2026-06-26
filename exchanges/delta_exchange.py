@@ -455,11 +455,15 @@ class DeltaExchange(BaseExchange):
         order_type: str,
         amount: float,
         price: Optional[float] = None,
+        stop_loss: Optional[float] = None,
+        take_profit: Optional[float] = None,
     ) -> OrderResult:
         """
         Place a new order on Delta Exchange.
-        side:       'buy' or 'sell'
-        order_type: 'market_order' or 'limit_order'
+        side:        'buy' or 'sell'
+        order_type:  'market_order' or 'limit_order'
+        stop_loss:   bracket SL trigger price (optional)
+        take_profit: bracket TP trigger price (optional)
         """
         product_id = PRODUCT_IDS.get(symbol)
         if product_id is None:
@@ -480,6 +484,14 @@ class DeltaExchange(BaseExchange):
         }
         if price is not None and order_type_api == "limit_order":
             payload["limit_price"] = str(price)
+
+        # Bracket orders: attach SL and TP to the entry so Delta manages them
+        if stop_loss is not None:
+            payload["bracket_stop_loss_price"] = str(stop_loss)
+            payload["bracket_stop_loss_limit_price"] = str(stop_loss)
+        if take_profit is not None:
+            payload["bracket_take_profit_price"] = str(take_profit)
+            payload["bracket_take_profit_limit_price"] = str(take_profit)
 
         data = self._signed_request("POST", "/v2/orders", body=payload)
         if data is None:

@@ -249,11 +249,13 @@ def _place_live_order(symbol: str, setup, risk) -> None:
         )
 
         order = exchange.place_order(
-            symbol     = symbol,
-            side       = side,
-            order_type = "limit",
-            amount     = contracts,
-            price      = setup.entry,
+            symbol      = symbol,
+            side        = side,
+            order_type  = "limit",
+            amount      = contracts,
+            price       = setup.entry,
+            stop_loss   = setup.stop_loss,
+            take_profit = setup.tp1,
         )
 
         logger.info(
@@ -267,8 +269,8 @@ def _place_live_order(symbol: str, setup, risk) -> None:
             f"<b>{symbol} {setup.direction}</b>\n"
             f"├ Order ID: <code>{order.order_id}</code>\n"
             f"├ Entry:    <b>${setup.entry:,.2f}</b> (limit)\n"
-            f"├ SL:       ${setup.stop_loss:,.2f}\n"
-            f"├ TP1:      ${setup.tp1:,.2f}\n"
+            f"├ SL:       ${setup.stop_loss:,.2f} (bracket)\n"
+            f"├ TP1:      ${setup.tp1:,.2f} (bracket)\n"
             f"├ TP2:      ${setup.tp2:,.2f}\n"
             f"└ Size:     {contracts} contracts"
         )

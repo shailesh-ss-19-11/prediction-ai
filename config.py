@@ -22,7 +22,7 @@ TELEGRAM_BOT_TOKEN = "8800960300:AAExwJ0q7WkWipz2RkvKw9-4Y28ePM5TAUc"   # From @
 TELEGRAM_CHAT_IDS  = ["1948356544", "7151542571"]   # Add more chat IDs here
 
 # --- Account ---
-ACCOUNT_BALANCE    = 100  # USD — used for lot-size calculation
+ACCOUNT_BALANCE    = 3    # USD — actual balance on Delta Exchange
 
 # --- Symbols ---
 SYMBOLS = ["BTCUSD", "ETHUSD", "XAUTUSD"]
@@ -76,11 +76,9 @@ ACTIVE_EXCHANGE  = "delta"   # delta | binance | bybit
 TRADINGVIEW_SECRET = ""
 
 # --- Trading mode ---
-PAPER_TRADING_MODE    = True   # True = paper, False = live (be careful!)
-AUTO_TRADE            = False  # True = auto-place limit orders on Delta Exchange when signal fires
-                               # Requires PAPER_TRADING_MODE = False and DELTA_API_KEY filled in
-MAX_CONTRACTS_PER_TRADE = 5   # Hard cap on live order size (1 contract = $1 notional on Delta)
-                               # 5 contracts = $5 max exposure. Increase only when confident.
+PAPER_TRADING_MODE    = False  # True = paper, False = live
+AUTO_TRADE            = True   # Auto-place limit orders on Delta Exchange when signal fires
+MAX_CONTRACTS_PER_TRADE = 1   # Hard cap — 1 contract = $1 notional. Safe for $3 balance.
 MAX_DAILY_LOSS_PERCENT = 3.0
 MAX_DRAWDOWN_PERCENT   = 10.0
 USE_AI_ENGINE          = False  # flip True when ready

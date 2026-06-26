@@ -191,6 +191,14 @@ class DeltaExchange(BaseExchange):
                 else:
                     raise ValueError(f"Unsupported HTTP method: {method_upper}")
 
+                # Don't retry auth errors — they won't fix themselves
+                if resp.status_code in (401, 403):
+                    logger.warning(
+                        "[DeltaExchange] %s %s returned %d — check API key/IP whitelist, not retrying",
+                        method_upper, endpoint, resp.status_code,
+                    )
+                    return None
+
                 resp.raise_for_status()
                 data = resp.json()
                 if data.get("success") is False:

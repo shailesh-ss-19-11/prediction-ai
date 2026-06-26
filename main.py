@@ -208,6 +208,96 @@ def _mark(key: str) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Live order tracking (unfilled limit orders on Delta Exchange)
+# ---------------------------------------------------------------------------
+
+_LIVE_ORDERS_FILE = os.path.join(config.DATA_DIR, "live_orders.json")
+_live_orders: dict = {}  # order_id -> {symbol, direction, entry, sl, contracts, placed_at}
+
+
+def _load_live_orders() -> None:
+    global _live_orders
+    try:
+        if os.path.exists(_LIVE_ORDERS_FILE):
+            with open(_LIVE_ORDERS_FILE, "r", encoding="utf-8") as fh:
+                _live_orders = json.load(fh)
+            logger.info("Loaded %d live order(s)", len(_live_orders))
+    except (OSError, ValueError, json.JSONDecodeError):
+        logger.exception("Failed to load live orders — starting fresh")
+        _live_orders = {}
+
+
+def _save_live_orders() -> None:
+    try:
+        os.makedirs(os.path.dirname(_LIVE_ORDERS_FILE), exist_ok=True)
+        with open(_LIVE_ORDERS_FILE, "w", encoding="utf-8") as fh:
+            json.dump(_live_orders, fh, indent=2)
+    except OSError:
+        logger.exception("Failed to save live orders")
+
+
+def _check_and_cancel_stale_orders() -> None:
+    """
+    On each scan, cross-check tracked live orders against Delta Exchange.
+    - Remove orders that have already filled or been cancelled externally.
+    - Cancel orders where price has breached the stop-loss level (filling
+      would immediately put the trade in a losing position).
+    """
+    if not _live_orders:
+        return
+
+    # Fetch open orders per symbol (one API call per symbol, not per order)
+    symbols = {v["symbol"] for v in _live_orders.values()}
+    open_order_ids: set = set()
+    for symbol in symbols:
+        try:
+            for o in exchange.fetch_open_orders(symbol):
+                open_order_ids.add(o.order_id)
+        except Exception:
+            logger.exception("fetch_open_orders failed for %s — skipping stale check", symbol)
+            return  # don't remove tracking if we couldn't confirm state
+
+    to_remove = []
+    for order_id, info in list(_live_orders.items()):
+        symbol    = info["symbol"]
+        direction = info["direction"]
+        sl        = info["sl"]
+
+        # Order no longer open — filled or cancelled externally
+        if order_id not in open_order_ids:
+            logger.info("Order %s (%s %s) no longer open on exchange — removing tracking",
+                        order_id, symbol, direction)
+            to_remove.append(order_id)
+            continue
+
+        # Cancel if price has already breached SL — filling now would be an instant loss
+        current_price = ws_price(symbol) or market_data.get_current_price(symbol)
+        if not current_price:
+            continue
+
+        breached = (
+            (direction == "LONG"  and current_price < sl) or
+            (direction == "SHORT" and current_price > sl)
+        )
+        if breached:
+            reason = f"price {current_price:.2f} breached SL {sl:.2f}"
+            logger.info("Cancelling stale order %s (%s %s): %s",
+                        order_id, symbol, direction, reason)
+            if exchange.cancel_order(order_id, symbol):
+                to_remove.append(order_id)
+                telegram.send_text(
+                    f"🚫 <b>Order Cancelled</b> — {symbol} {direction}\n"
+                    f"├ Order ID: <code>{order_id}</code>\n"
+                    f"└ Reason: {reason}"
+                )
+
+    if to_remove:
+        for oid in to_remove:
+            _live_orders.pop(oid, None)
+        _save_live_orders()
+
+
+# ---------------------------------------------------------------------------
 # Closed-candle helper
 # ---------------------------------------------------------------------------
 
@@ -257,6 +347,17 @@ def _place_live_order(symbol: str, setup, risk) -> None:
             stop_loss   = setup.stop_loss,
             take_profit = setup.tp1,
         )
+
+        # Track the unfilled order so it can be cancelled if conditions change
+        _live_orders[order.order_id] = {
+            "symbol":     symbol,
+            "direction":  setup.direction,
+            "entry":      setup.entry,
+            "sl":         setup.stop_loss,
+            "contracts":  contracts,
+            "placed_at":  time.time(),
+        }
+        _save_live_orders()
 
         logger.info(
             "LIVE ORDER PLACED: %s %s | id=%s | entry=%.2f | contracts=%d | sl=%.2f | tp1=%.2f",
@@ -489,6 +590,13 @@ def run_checks() -> None:
     if not config.PAPER_TRADING_MODE and config.DELTA_API_KEY:
         _refresh_balance()
 
+    # Cancel unfilled orders whose SL has been breached or that filled externally
+    if config.AUTO_TRADE and not config.PAPER_TRADING_MODE and config.DELTA_API_KEY:
+        try:
+            _check_and_cancel_stale_orders()
+        except Exception:
+            logger.exception("Stale order check failed")
+
     # Close paper trades that hit SL/TP
     try:
         prices = {s: (ws_price(s) or market_data.get_current_price(s))
@@ -553,6 +661,7 @@ def main() -> None:
     # cooldowns, so positions were duplicated and journal entries never closed
     paper.load_from_file(os.path.join(config.DATA_DIR, "paper_trades.json"))
     _load_cooldowns()
+    _load_live_orders()
 
     # Start REST API server in background thread
     api_server.start_api_thread(paper)

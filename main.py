@@ -92,6 +92,44 @@ ot_filter      = OvertradingFilter(max_signals_per_day=3)
 session_filter = SessionFilter()
 
 # ---------------------------------------------------------------------------
+# Live balance refresh
+# ---------------------------------------------------------------------------
+
+def _refresh_balance() -> float:
+    """
+    Fetch real wallet balance from Delta Exchange and sync it into the
+    risk manager so position sizing always reflects the actual account.
+    Falls back to config.ACCOUNT_BALANCE if the API call fails.
+    """
+    try:
+        balances = exchange.fetch_balance()
+        if not balances:
+            logger.warning("fetch_balance returned empty — using config balance")
+            return risk_mgr.account_balance
+
+        # Delta Exchange India uses USDT as main collateral; fall back to USD
+        usd_balance = (
+            balances.get("USDT")
+            or balances.get("USD")
+            or balances.get("usdt")
+            or max(balances.values(), default=0)
+        )
+        usd_balance = round(float(usd_balance), 4)
+
+        if usd_balance > 0 and usd_balance != risk_mgr.account_balance:
+            logger.info(
+                "Balance updated: $%.4f → $%.4f", risk_mgr.account_balance, usd_balance
+            )
+            risk_mgr.account_balance = usd_balance
+
+        return usd_balance
+
+    except Exception:
+        logger.exception("_refresh_balance failed — keeping current balance")
+        return risk_mgr.account_balance
+
+
+# ---------------------------------------------------------------------------
 # Outbound IP monitor
 # ---------------------------------------------------------------------------
 
@@ -444,6 +482,10 @@ def run_checks() -> None:
     scan_start = time.time()
     logger.info("=== Scan started | symbols=%s ===", config.SYMBOLS)
 
+    # Sync real balance before every scan so position sizing is accurate
+    if not config.PAPER_TRADING_MODE and config.DELTA_API_KEY:
+        _refresh_balance()
+
     # Close paper trades that hit SL/TP
     try:
         prices = {s: (ws_price(s) or market_data.get_current_price(s))
@@ -525,6 +567,16 @@ def main() -> None:
     )
 
     check_ip_change()   # record initial IP at startup
+
+    # Fetch real balance at startup
+    if not config.PAPER_TRADING_MODE and config.DELTA_API_KEY:
+        live_balance = _refresh_balance()
+        telegram.send_text(
+            f"💰 <b>Account Balance</b>: <code>${live_balance:.4f}</code>\n"
+            f"Risk per trade: <b>{config.MAX_RISK_PERCENT}%</b> "
+            f"= <code>${live_balance * config.MAX_RISK_PERCENT / 100:.4f}</code>"
+        )
+
     run_checks()
     schedule.every(config.CHECK_INTERVAL_MINUTES).minutes.do(run_checks)
     schedule.every(config.CHECK_INTERVAL_MINUTES).minutes.do(check_ip_change)

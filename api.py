@@ -35,10 +35,12 @@ from datetime import datetime, timezone
 
 from flask import Flask, jsonify, request, send_file
 
+import config
+
 logger = logging.getLogger(__name__)
 
-TRADE_RECORDS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "trade_records.json")
-PAPER_TRADES_FILE  = os.path.join(os.path.dirname(os.path.abspath(__file__)), "paper_trades.json")
+TRADE_RECORDS_FILE = os.path.join(config.DATA_DIR, "trade_records.json")
+PAPER_TRADES_FILE  = os.path.join(config.DATA_DIR, "paper_trades.json")
 LOGS_DIR           = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs")
 
 _start_time = time.time()

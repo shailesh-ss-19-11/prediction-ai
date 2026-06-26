@@ -13,9 +13,11 @@ import os
 from datetime import datetime, timezone
 from typing import Optional
 
+import config
+
 logger = logging.getLogger(__name__)
 
-JOURNAL_FILE = "trade_records.json"
+JOURNAL_FILE = os.path.join(config.DATA_DIR, "trade_records.json")
 
 
 # ---------------------------------------------------------------------------

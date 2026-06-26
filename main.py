@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 
 import requests
 import schedule
+import threading
 
 import api as api_server
 import config
@@ -171,7 +172,7 @@ def check_ip_change() -> None:
 # Key format: "BTCUSD_LONG" or "BTCUSD_SHORT"
 # Persisted to disk so a process restart can't bypass the cooldown
 # (this previously caused duplicate signals minutes apart).
-_COOLDOWN_FILE = "data/cooldowns.json"
+_COOLDOWN_FILE = os.path.join(config.DATA_DIR, "cooldowns.json")
 _last_signal: dict[str, float] = {}
 _COOLDOWN = 4 * 3600
 
@@ -422,7 +423,7 @@ def check_symbol(symbol: str) -> None:
                 trade = paper.open_trade(symbol, setup.direction, setup.entry,
                                          setup.stop_loss, setup.tp1, setup.tp2, risk.lot_size)
                 trade_id = trade.id
-                paper.save_to_file("paper_trades.json")
+                paper.save_to_file(os.path.join(config.DATA_DIR, "paper_trades.json"))
 
             # Send signal to Telegram
             sent = telegram.send_signal(
@@ -495,7 +496,7 @@ def run_checks() -> None:
         closed_trades = paper.update(prices)
         # Save every scan — update() can also move stops to breakeven
         # without closing, and that state must survive a restart
-        paper.save_to_file("paper_trades.json")
+        paper.save_to_file(os.path.join(config.DATA_DIR, "paper_trades.json"))
         if closed_trades:
             logger.info("Paper trades closed this scan: %d", len(closed_trades))
         for closed in closed_trades:
@@ -548,7 +549,7 @@ def main() -> None:
 
     # Restore state — without this every restart forgot open trades and
     # cooldowns, so positions were duplicated and journal entries never closed
-    paper.load_from_file("paper_trades.json")
+    paper.load_from_file(os.path.join(config.DATA_DIR, "paper_trades.json"))
     _load_cooldowns()
 
     # Start REST API server in background thread
@@ -568,14 +569,16 @@ def main() -> None:
 
     check_ip_change()   # record initial IP at startup
 
-    # Fetch real balance at startup
+    # Fetch real balance at startup (non-blocking — runs in background thread)
     if not config.PAPER_TRADING_MODE and config.DELTA_API_KEY:
-        live_balance = _refresh_balance()
-        telegram.send_text(
-            f"💰 <b>Account Balance</b>: <code>${live_balance:.4f}</code>\n"
-            f"Risk per trade: <b>{config.MAX_RISK_PERCENT}%</b> "
-            f"= <code>${live_balance * config.MAX_RISK_PERCENT / 100:.4f}</code>"
-        )
+        def _startup_balance():
+            live_balance = _refresh_balance()
+            telegram.send_text(
+                f"💰 <b>Account Balance</b>: <code>${live_balance:.4f}</code>\n"
+                f"Risk per trade: <b>{config.MAX_RISK_PERCENT}%</b> "
+                f"= <code>${live_balance * config.MAX_RISK_PERCENT / 100:.4f}</code>"
+            )
+        threading.Thread(target=_startup_balance, daemon=True, name="startup-balance").start()
 
     run_checks()
     schedule.every(config.CHECK_INTERVAL_MINUTES).minutes.do(run_checks)
@@ -589,7 +592,7 @@ def main() -> None:
             schedule.run_pending()
             time.sleep(10)
         except KeyboardInterrupt:
-            paper.save_to_file("paper_trades.json")
+            paper.save_to_file(os.path.join(config.DATA_DIR, "paper_trades.json"))
             logger.info("Stopped. Trades saved.")
             break
 

@@ -83,8 +83,13 @@ MAX_DAILY_LOSS_PERCENT = 3.0
 MAX_DRAWDOWN_PERCENT   = 10.0
 USE_AI_ENGINE          = False  # flip True when ready
 
+# --- Data directory (Railway Volume mounted at /data, or local ./data) ---
+import os as _os
+DATA_DIR = _os.environ.get("DATA_DIR", "data")
+_os.makedirs(DATA_DIR, exist_ok=True)
+
 # --- Database ---
-DATABASE_URL = "sqlite:///./data/tradesignal.db"
+DATABASE_URL = f"sqlite:///{DATA_DIR}/tradesignal.db"
 
 # --- Notifications (optional) ---
 DISCORD_WEBHOOK_URL = ""

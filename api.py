@@ -108,6 +108,31 @@ def create_app(paper_engine):
     app = Flask(__name__)
     app.logger.disabled = True
 
+    # ── root ──────────────────────────────────────────────────────────────────
+
+    @app.route("/", methods=["GET"])
+    def index():
+        return jsonify({
+            "service": "DeltaSignalBot API",
+            "status":  "running",
+            "endpoints": [
+                "/health",
+                "/paper-trades",
+                "/paper-trades/open",
+                "/paper-trades/closed",
+                "/paper-trades/stats",
+                "/paper-trades/download",
+                "/trade-records",
+                "/trade-records/open",
+                "/trade-records/closed",
+                "/trade-records/stats",
+                "/trade-records/download",
+                "/logs",
+                "/logs/bot",
+                "/logs/errors",
+            ],
+        })
+
     # ── health ────────────────────────────────────────────────────────────────
 
     @app.route("/health", methods=["GET"])
@@ -343,6 +368,6 @@ def start_api_thread(paper_engine):
         logger.info("API server starting on http://0.0.0.0:%d", port)
         app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False)
 
-    thread = threading.Thread(target=_run, name="api-server", daemon=True)
+    thread = threading.Thread(target=_run, name="api-server", daemon=False)
     thread.start()
     return thread

@@ -1,7 +1,12 @@
 # ============================================================
 # DeltaSignalBot — Configuration
-# Fill in TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID before running
+# Secrets are loaded from environment variables (Railway dashboard
+# or local .env file). Never hardcode keys here.
 # ============================================================
+
+import os
+from dotenv import load_dotenv
+load_dotenv()  # loads .env locally; on Railway env vars are already set
 
 # --- Logging ---
 LOG_LEVEL        = "INFO"          # DEBUG | INFO | WARNING | ERROR
@@ -58,9 +63,9 @@ ATR_PREPARE_MULT = 0.5
 CHECK_INTERVAL_MINUTES = 5   # run every N minutes
 RESET_TRACKER_HOURS    = 4   # clear duplicate tracker every N hours
 
-# --- Exchange API keys (leave blank to use public data only) ---
-DELTA_API_KEY    = ""
-DELTA_API_SECRET = ""
+# --- Exchange API keys (set APIKEY and SECRET in Railway Variables or .env) ---
+DELTA_API_KEY    = os.environ.get("APIKEY", "")
+DELTA_API_SECRET = os.environ.get("SECRET", "")
 BINANCE_API_KEY  = ""
 BINANCE_API_SECRET = ""
 BYBIT_API_KEY    = ""

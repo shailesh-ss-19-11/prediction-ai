@@ -12,6 +12,7 @@ import sys
 import time
 from datetime import datetime, timezone
 
+import requests
 import schedule
 
 import api as api_server
@@ -89,6 +90,44 @@ telegram    = TelegramNotifier(config.TELEGRAM_BOT_TOKEN, config.TELEGRAM_CHAT_I
 vol_filter     = VolatilityFilter()
 ot_filter      = OvertradingFilter(max_signals_per_day=3)
 session_filter = SessionFilter()
+
+# ---------------------------------------------------------------------------
+# Outbound IP monitor
+# ---------------------------------------------------------------------------
+
+_prev_ip: str = ""
+
+
+def check_ip_change() -> None:
+    global _prev_ip
+    try:
+        current_ip = requests.get("https://api.ipify.org", timeout=10).text.strip()
+    except Exception as exc:
+        logger.warning("IP check failed: %s", exc)
+        return
+
+    if not _prev_ip:
+        # First run — record IP and notify via Telegram
+        _prev_ip = current_ip
+        logger.info("Outbound IP recorded: %s", current_ip)
+        telegram.send_text(
+            f"🌐 <b>Bot Started — Outbound IP</b>\n\n"
+            f"IP: <code>{current_ip}</code>\n\n"
+            f"Whitelist this IP on Delta Exchange if not already done."
+        )
+        return
+
+    if current_ip != _prev_ip:
+        logger.warning("Outbound IP changed: %s → %s", _prev_ip, current_ip)
+        telegram.send_text(
+            f"⚠️ <b>Outbound IP Changed!</b>\n\n"
+            f"Old IP: <code>{_prev_ip}</code>\n"
+            f"New IP: <code>{current_ip}</code>\n\n"
+            f"Update Delta Exchange API key whitelist with the new IP, "
+            f"otherwise live trading will fail."
+        )
+        _prev_ip = current_ip
+
 
 # Cooldown: don't repeat same direction signal within 4 hours
 # Key format: "BTCUSD_LONG" or "BTCUSD_SHORT"
@@ -485,8 +524,10 @@ def main() -> None:
         f"Every <b>{config.CHECK_INTERVAL_MINUTES}min</b>"
     )
 
+    check_ip_change()   # record initial IP at startup
     run_checks()
     schedule.every(config.CHECK_INTERVAL_MINUTES).minutes.do(run_checks)
+    schedule.every(config.CHECK_INTERVAL_MINUTES).minutes.do(check_ip_change)
     schedule.every(1).hours.do(send_hourly_status)
     schedule.every().day.at("00:00").do(ot_filter.reset_daily)
 

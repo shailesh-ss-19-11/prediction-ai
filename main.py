@@ -315,6 +315,8 @@ def _check_position_closures() -> None:
         entry      = info["entry"]
         sl         = info["sl"]
         tp1        = info["tp1"]
+        tp2        = info.get("tp2", 0.0)
+        contracts  = info.get("contracts", 0)
         journal_id = info.get("journal_id", "")
 
         # Try to get exit price from most recent fill
@@ -327,28 +329,43 @@ def _check_position_closures() -> None:
         except Exception:
             logger.warning("fetch_recent_fills failed for %s", symbol)
 
-        # Determine SL vs TP from exit price proximity
+        # Determine SL vs TP1 vs TP2 from exit price proximity
         if exit_price > 0:
             sl_dist  = abs(exit_price - sl)
             tp1_dist = abs(exit_price - tp1)
-            if tp1_dist < sl_dist:
-                exit_reason = "tp1_hit"
+            tp2_dist = abs(exit_price - tp2) if tp2 else float("inf")
+            min_dist = min(sl_dist, tp1_dist, tp2_dist)
+            if min_dist == tp2_dist:
+                exit_reason = "tp2"
+                emoji = "🎯"
+                outcome = f"TP2 HIT at ${exit_price:,.2f}"
+            elif tp1_dist < sl_dist:
+                exit_reason = "tp1"
                 emoji = "🎯"
                 outcome = f"TP1 HIT at ${exit_price:,.2f}"
             else:
-                exit_reason = "sl_hit"
+                exit_reason = "sl"
                 emoji = "🛑"
                 outcome = f"SL HIT at ${exit_price:,.2f}"
         else:
             emoji = "📊"
             outcome = "Position closed (check Delta for exit price)"
 
-        logger.info("Position CLOSED: %s %s | %s", symbol, direction, outcome)
+        # Compute PnL from contract size and price move
+        pnl = None
+        if exit_price > 0 and contracts > 0:
+            if direction == "LONG":
+                pnl = round((exit_price - entry) * contracts, 6)
+            else:
+                pnl = round((entry - exit_price) * contracts, 6)
+
+        logger.info("Position CLOSED: %s %s | %s | pnl=%s", symbol, direction, outcome, pnl)
         telegram.send_text(
             f"{emoji} <b>Position Closed — {symbol} {direction}</b>\n"
             f"├ Entry:  ${entry:,.2f}\n"
             f"├ SL:     ${sl:,.2f}\n"
             f"├ TP1:    ${tp1:,.2f}\n"
+            f"├ TP2:    ${tp2:,.2f}\n"
             f"└ Result: <b>{outcome}</b>"
         )
 
@@ -357,7 +374,7 @@ def _check_position_closures() -> None:
                 trade_id    = journal_id,
                 exit_price  = exit_price,
                 exit_reason = exit_reason,
-                pnl         = None,
+                pnl         = pnl,
             )
 
         to_remove.append(symbol)

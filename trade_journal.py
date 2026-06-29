@@ -108,7 +108,7 @@ def record_close(
     trade_id: str,
     exit_price: float,
     exit_reason: str,
-    pnl: float,
+    pnl: Optional[float],
 ) -> None:
     """
     Update an existing trade record when the trade closes (SL or TP hit).
@@ -123,7 +123,7 @@ def record_close(
             rec["closed_at"]   = _now_iso()
             rec["exit_price"]  = round(exit_price, 8)
             rec["exit_reason"] = exit_reason
-            rec["pnl"]         = round(pnl, 6)
+            rec["pnl"]         = round(pnl, 6) if pnl is not None else None
             rec["sl_hit"]      = exit_reason == "sl"
             rec["tp1_hit"]     = exit_reason == "tp1"
             rec["tp2_hit"]     = exit_reason == "tp2"
@@ -145,7 +145,7 @@ def record_close(
         "closed_at":   _now_iso(),
         "exit_price":  round(exit_price, 8),
         "exit_reason": exit_reason,
-        "pnl":         round(pnl, 6),
+        "pnl":         round(pnl, 6) if pnl is not None else None,
         "sl_hit":      exit_reason == "sl",
         "tp1_hit":     exit_reason == "tp1",
         "tp2_hit":     exit_reason == "tp2",

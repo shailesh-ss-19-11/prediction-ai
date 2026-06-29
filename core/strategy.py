@@ -28,10 +28,10 @@ _MIN_CONDITIONS = 6
 
 # ATR multiplier for the minimum SL distance from entry AND for the buffer
 # placed below/above the structural swing point.
-_SL_ATR_MULT = 1.5
+_SL_ATR_MULT = 2.0
 
-# Minimum SL distance as a fraction of entry price (0.8% floor for crypto).
-_MIN_SL_PCT = 0.008
+# Minimum SL distance as a fraction of entry price (1.2% floor for crypto).
+_MIN_SL_PCT = 0.012
 
 # Price must be within this fraction of a key swing level to allow entry.
 # Trades fired from the middle of a range are blocked.
@@ -50,7 +50,7 @@ _VOLUME_LOOKBACK = 20
 _VOLUME_SPIKE_MULT = 1.5
 
 # Minimum 4h trend_strength (0-1) required before accepting the structure bias
-_MIN_TREND_STRENGTH = 0.5
+_MIN_TREND_STRENGTH = 0.65
 
 
 # ---------------------------------------------------------------------------
@@ -412,19 +412,19 @@ class TrendStrategy:
                 f"1h EMA20 ({indicators_1h.ema_20:.4f}) > EMA50 ({indicators_1h.ema_50:.4f})"
             )
 
-        # 3. RSI 52–75 on 15m — momentum bullish (above midline confirms upside pressure)
+        # 3. RSI 55–75 on 15m — momentum bullish (tightened from 52 to require clearer conviction)
         rsi_15m = indicators_15m.rsi_14
-        c3_ok = not math.isnan(rsi_15m) and 52.0 <= rsi_15m <= 75.0
+        c3_ok = not math.isnan(rsi_15m) and 55.0 <= rsi_15m <= 75.0
         if c3_ok:
             conditions_passed += 1
-            reasons.append(f"15m RSI {rsi_15m:.1f} in buy zone [52–75]")
+            reasons.append(f"15m RSI {rsi_15m:.1f} in buy zone [55–75]")
 
         # 4. Bullish pattern on the most recent COMPLETED candle.
         #    Callers pass closed candles only, and `patterns` was detected on
         #    that data — so the pattern is confirmed, not from a forming candle.
         best_bullish_pattern: Optional[CandlePattern] = None
         for p in patterns:
-            if p.direction == "bullish" and p.confidence >= 0.60:
+            if p.direction == "bullish" and p.confidence >= 0.75:
                 best_bullish_pattern = p
                 break
         c4_ok = best_bullish_pattern is not None
@@ -479,6 +479,20 @@ class TrendStrategy:
             )
             return None
 
+        # Mandatory: volume spike must be present — no conviction without volume
+        if not c5_ok:
+            logger.debug("[Strategy] %s LONG: no volume spike — mandatory condition not met", symbol)
+            return None
+
+        # Mandatory: 1h RSI must confirm bullish momentum (above 50)
+        rsi_1h = indicators_1h.rsi_14
+        if math.isnan(rsi_1h) or rsi_1h <= 50.0:
+            logger.debug(
+                "[Strategy] %s LONG: 1h RSI %.1f not bullish (must be > 50) — gate failed",
+                symbol, rsi_1h,
+            )
+            return None
+
         # Pre-trade proximity filter: skip trades fired from the middle of a range
         # or at the wrong side of the range (longs must be near support).
         if not _is_price_near_key_level(df_15m, close, "LONG"):
@@ -492,8 +506,8 @@ class TrendStrategy:
         #
         # Three constraints — SL is the LOWEST (farthest from entry) of all three:
         #   1. Below the nearest structural swing low  (a real pivot, not raw rolling min)
-        #   2. At least 1.5× ATR below entry           (volatility minimum)
-        #   3. At least 0.8% below entry               (crypto price floor)
+        #   2. At least 2.0× ATR below entry           (volatility minimum)
+        #   3. At least 1.2% below entry               (crypto price floor)
         #
         entry       = close
         swing_low   = _nearest_swing_low(df_15m, entry, atr)
@@ -582,17 +596,17 @@ class TrendStrategy:
                 f"1h EMA20 ({indicators_1h.ema_20:.4f}) < EMA50 ({indicators_1h.ema_50:.4f})"
             )
 
-        # 3. RSI 25–48 on 15m — momentum bearish (below midline confirms downside pressure)
+        # 3. RSI 25–42 on 15m — momentum bearish (tightened from 48 to require clearer conviction)
         rsi_15m = indicators_15m.rsi_14
-        c3_ok = not math.isnan(rsi_15m) and 25.0 <= rsi_15m <= 48.0
+        c3_ok = not math.isnan(rsi_15m) and 25.0 <= rsi_15m <= 42.0
         if c3_ok:
             conditions_passed += 1
-            reasons.append(f"15m RSI {rsi_15m:.1f} in sell zone [25–48]")
+            reasons.append(f"15m RSI {rsi_15m:.1f} in sell zone [25–42]")
 
         # 4. Bearish pattern on the most recent COMPLETED candle (see LONG note).
         best_bearish_pattern: Optional[CandlePattern] = None
         for p in patterns:
-            if p.direction == "bearish" and p.confidence >= 0.60:
+            if p.direction == "bearish" and p.confidence >= 0.75:
                 best_bearish_pattern = p
                 break
         c4_ok = best_bearish_pattern is not None
@@ -647,6 +661,20 @@ class TrendStrategy:
             )
             return None
 
+        # Mandatory: volume spike must be present — no conviction without volume
+        if not c5_ok:
+            logger.debug("[Strategy] %s SHORT: no volume spike — mandatory condition not met", symbol)
+            return None
+
+        # Mandatory: 1h RSI must confirm bearish momentum (below 50)
+        rsi_1h = indicators_1h.rsi_14
+        if math.isnan(rsi_1h) or rsi_1h >= 50.0:
+            logger.debug(
+                "[Strategy] %s SHORT: 1h RSI %.1f not bearish (must be < 50) — gate failed",
+                symbol, rsi_1h,
+            )
+            return None
+
         # Pre-trade proximity filter: skip trades fired from the middle of a range
         # or at the wrong side of the range (shorts must be near resistance).
         if not _is_price_near_key_level(df_15m, close, "SHORT"):
@@ -660,8 +688,8 @@ class TrendStrategy:
         #
         # Three constraints — SL is the HIGHEST (farthest from entry) of all three:
         #   1. Above the nearest structural swing high (a real pivot, not raw rolling max)
-        #   2. At least 1.5× ATR above entry           (volatility minimum)
-        #   3. At least 0.8% above entry               (crypto price floor)
+        #   2. At least 2.0× ATR above entry           (volatility minimum)
+        #   3. At least 1.2% above entry               (crypto price floor)
         #
         entry       = close
         swing_high  = _nearest_swing_high(df_15m, entry, atr)

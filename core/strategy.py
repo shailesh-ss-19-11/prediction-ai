@@ -24,7 +24,7 @@ from core.smc import OrderBlock, FairValueGap, LiquiditySweep
 logger = logging.getLogger(__name__)
 
 # Minimum conditions that must pass (out of 7) to emit a signal
-_MIN_CONDITIONS = 5
+_MIN_CONDITIONS = 6
 
 # ATR multiplier for the minimum SL distance from entry AND for the buffer
 # placed below/above the structural swing point.
@@ -46,11 +46,11 @@ _MIN_RR = 2.0
 # Candle lookback for volume average
 _VOLUME_LOOKBACK = 20
 
-# Volume spike threshold — lowered from 1.5 to 1.2 so moderate spikes count
-_VOLUME_SPIKE_MULT = 1.2
+# Volume spike threshold — 1.5x average is a meaningful spike
+_VOLUME_SPIKE_MULT = 1.5
 
 # Minimum 4h trend_strength (0-1) required before accepting the structure bias
-_MIN_TREND_STRENGTH = 0.3
+_MIN_TREND_STRENGTH = 0.5
 
 
 # ---------------------------------------------------------------------------
@@ -412,12 +412,12 @@ class TrendStrategy:
                 f"1h EMA20 ({indicators_1h.ema_20:.4f}) > EMA50 ({indicators_1h.ema_50:.4f})"
             )
 
-        # 3. RSI 45–75 on 15m — momentum bullish (wider band covers strong uptrends)
+        # 3. RSI 52–75 on 15m — momentum bullish (above midline confirms upside pressure)
         rsi_15m = indicators_15m.rsi_14
-        c3_ok = not math.isnan(rsi_15m) and 45.0 <= rsi_15m <= 75.0
+        c3_ok = not math.isnan(rsi_15m) and 52.0 <= rsi_15m <= 75.0
         if c3_ok:
             conditions_passed += 1
-            reasons.append(f"15m RSI {rsi_15m:.1f} in buy zone [45–75]")
+            reasons.append(f"15m RSI {rsi_15m:.1f} in buy zone [52–75]")
 
         # 4. Bullish pattern on the most recent COMPLETED candle.
         #    Callers pass closed candles only, and `patterns` was detected on
@@ -441,9 +441,13 @@ class TrendStrategy:
             conditions_passed += 1
             reasons.append("Bullish volume spike on last closed candle > 1.5x 20-bar avg")
 
-        # 6. 4h structure bias = 'bullish' with meaningful trend strength
+        # 6. 4h structure bias = 'bullish' with meaningful trend strength.
+        # Hard block on 'ranging' — no trend means no trade regardless of other conditions.
         bias     = structure.get("bias", "ranging")
         strength = structure.get("trend_strength", 0.0)
+        if bias == "ranging":
+            logger.debug("[Strategy] %s LONG blocked — 4h bias is ranging (no trend)", symbol)
+            return None
         c6_ok    = bias == "bullish" and strength >= _MIN_TREND_STRENGTH
         if c6_ok:
             conditions_passed += 1
@@ -578,12 +582,12 @@ class TrendStrategy:
                 f"1h EMA20 ({indicators_1h.ema_20:.4f}) < EMA50 ({indicators_1h.ema_50:.4f})"
             )
 
-        # 3. RSI 25–55 on 15m — momentum bearish (wider band covers strong downtrends)
+        # 3. RSI 25–48 on 15m — momentum bearish (below midline confirms downside pressure)
         rsi_15m = indicators_15m.rsi_14
-        c3_ok = not math.isnan(rsi_15m) and 25.0 <= rsi_15m <= 55.0
+        c3_ok = not math.isnan(rsi_15m) and 25.0 <= rsi_15m <= 48.0
         if c3_ok:
             conditions_passed += 1
-            reasons.append(f"15m RSI {rsi_15m:.1f} in sell zone [25–55]")
+            reasons.append(f"15m RSI {rsi_15m:.1f} in sell zone [25–48]")
 
         # 4. Bearish pattern on the most recent COMPLETED candle (see LONG note).
         best_bearish_pattern: Optional[CandlePattern] = None
@@ -605,9 +609,13 @@ class TrendStrategy:
             conditions_passed += 1
             reasons.append("Bearish volume spike on last closed candle > 1.5x 20-bar avg")
 
-        # 6. 4h structure bias = 'bearish' with meaningful trend strength
+        # 6. 4h structure bias = 'bearish' with meaningful trend strength.
+        # Hard block on 'ranging' — no trend means no trade regardless of other conditions.
         bias     = structure.get("bias", "ranging")
         strength = structure.get("trend_strength", 0.0)
+        if bias == "ranging":
+            logger.debug("[Strategy] %s SHORT blocked — 4h bias is ranging (no trend)", symbol)
+            return None
         c6_ok    = bias == "bearish" and strength >= _MIN_TREND_STRENGTH
         if c6_ok:
             conditions_passed += 1

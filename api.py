@@ -23,6 +23,9 @@ GET /logs                            List available log files
 GET /logs/bot                        Bot log (tail=N lines, default 100)
 GET /logs/errors                     Error log (tail=N lines, default 100)
 GET /logs/download/<filename>        Download a log file
+
+GET /live-orders                     Unfilled live orders tracked by bot
+GET /cooldowns                       Active cooldown timers per symbol+direction
 """
 
 import json
@@ -41,6 +44,9 @@ logger = logging.getLogger(__name__)
 
 TRADE_RECORDS_FILE = os.path.join(config.DATA_DIR, "trade_records.json")
 PAPER_TRADES_FILE  = os.path.join(config.DATA_DIR, "paper_trades.json")
+LIVE_ORDERS_FILE     = os.path.join(config.DATA_DIR, "live_orders.json")
+LIVE_POSITIONS_FILE  = os.path.join(config.DATA_DIR, "live_positions.json")
+COOLDOWNS_FILE       = os.path.join(config.DATA_DIR, "cooldowns.json")
 LOGS_DIR           = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs")
 
 _start_time = time.time()
@@ -129,6 +135,9 @@ def create_app(paper_engine):
                 "/trade-records/closed",
                 "/trade-records/stats",
                 "/trade-records/download",
+                "/live-orders",
+                "/live-positions",
+                "/cooldowns",
                 "/logs",
                 "/logs/bot",
                 "/logs/errors",
@@ -303,6 +312,78 @@ def create_app(paper_engine):
             as_attachment=True,
             download_name="trade_records.json",
         )
+
+    # ── live-orders ───────────────────────────────────────────────────────────
+
+    @app.route("/live-orders", methods=["GET"])
+    def get_live_orders():
+        """Unfilled limit orders currently tracked by the bot."""
+        if not os.path.exists(LIVE_ORDERS_FILE):
+            return jsonify({})
+        try:
+            with open(LIVE_ORDERS_FILE, "r", encoding="utf-8") as fh:
+                data = json.load(fh)
+            # Annotate each order with how long it has been open
+            now = time.time()
+            for info in data.values():
+                placed_at = info.get("placed_at", now)
+                age_s = int(now - placed_at)
+                h, rem = divmod(age_s, 3600)
+                m, s   = divmod(rem, 60)
+                info["age"] = f"{h}h {m}m {s}s"
+            return jsonify(data)
+        except (json.JSONDecodeError, OSError):
+            return jsonify({"error": "Could not read live_orders.json"}), 500
+
+    # ── live-positions ────────────────────────────────────────────────────────
+
+    @app.route("/live-positions", methods=["GET"])
+    def get_live_positions():
+        """Open positions being tracked by the bot (entry filled, waiting for SL/TP)."""
+        if not os.path.exists(LIVE_POSITIONS_FILE):
+            return jsonify({})
+        try:
+            with open(LIVE_POSITIONS_FILE, "r", encoding="utf-8") as fh:
+                data = json.load(fh)
+            now = time.time()
+            for info in data.values():
+                opened_at = info.get("opened_at", now)
+                age_s = int(now - opened_at)
+                h, rem = divmod(age_s, 3600)
+                m, s   = divmod(rem, 60)
+                info["age"] = f"{h}h {m}m {s}s"
+            return jsonify(data)
+        except (json.JSONDecodeError, OSError):
+            return jsonify({"error": "Could not read live_positions.json"}), 500
+
+    # ── cooldowns ─────────────────────────────────────────────────────────────
+
+    @app.route("/cooldowns", methods=["GET"])
+    def get_cooldowns():
+        """Active cooldown timers. Shows remaining seconds per symbol+direction."""
+        if not os.path.exists(COOLDOWNS_FILE):
+            return jsonify({})
+        try:
+            with open(COOLDOWNS_FILE, "r", encoding="utf-8") as fh:
+                raw = json.load(fh)
+            cooldown_secs = 4 * 3600
+            now = time.time()
+            result = {}
+            for key, ts in raw.items():
+                remaining = int(cooldown_secs - (now - float(ts)))
+                if remaining > 0:
+                    h, rem = divmod(remaining, 3600)
+                    m, s   = divmod(rem, 60)
+                    result[key] = {
+                        "remaining_seconds": remaining,
+                        "remaining":         f"{h}h {m}m {s}s",
+                        "expires_at":        datetime.fromtimestamp(
+                            float(ts) + cooldown_secs, tz=timezone.utc
+                        ).isoformat(),
+                    }
+            return jsonify(result)
+        except (json.JSONDecodeError, OSError):
+            return jsonify({"error": "Could not read cooldowns.json"}), 500
 
     # ── logs ──────────────────────────────────────────────────────────────────
 

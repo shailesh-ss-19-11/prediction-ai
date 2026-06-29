@@ -37,8 +37,20 @@ SEND_WARNING_ALERTS = False
 SEND_PREPARE_ALERTS = False
 
 # --- Delta Exchange ---
-BASE_URL      = "https://api.india.delta.exchange"
-WS_URL        = "wss://socket.india.delta.exchange"
+# Set USE_TESTNET = True to trade on the testnet (fake money, real API behaviour).
+# Register a testnet account at: testnet.india.delta.exchange
+# Get testnet API keys and set TESTNET_APIKEY / TESTNET_SECRET in your .env
+USE_TESTNET = False
+
+if USE_TESTNET:
+    BASE_URL = "https://cdn-ind-testnet.deltaex.org"
+    WS_URL   = "wss://testnet-socket.india.delta.exchange"
+    DELTA_API_KEY    = os.environ.get("TESTNET_APIKEY", "")
+    DELTA_API_SECRET = os.environ.get("TESTNET_SECRET", "")
+else:
+    BASE_URL = "https://api.india.delta.exchange"
+    WS_URL   = "wss://socket.india.delta.exchange"
+
 REQUEST_TIMEOUT = 15     # seconds
 
 # --- Timeframes (resolution in minutes as used by the API) ---
@@ -64,8 +76,11 @@ CHECK_INTERVAL_MINUTES = 5   # run every N minutes
 RESET_TRACKER_HOURS    = 4   # clear duplicate tracker every N hours
 
 # --- Exchange API keys (set APIKEY and SECRET in Railway Variables or .env) ---
+# For testnet keys, set TESTNET_APIKEY and TESTNET_SECRET instead.
+# These are overridden below if USE_TESTNET = True.
 DELTA_API_KEY    = os.environ.get("APIKEY", "")
 DELTA_API_SECRET = os.environ.get("SECRET", "")
+
 BINANCE_API_KEY  = ""
 BINANCE_API_SECRET = ""
 BYBIT_API_KEY    = ""

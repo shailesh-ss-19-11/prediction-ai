@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 # Constants
 # ---------------------------------------------------------------------------
 
-BASE_URL = "https://api.india.delta.exchange"
+BASE_URL = config.BASE_URL  # switches between live and testnet via config.USE_TESTNET
 
 # Perpetual product IDs on Delta Exchange India
 PRODUCT_IDS: Dict[str, int] = {
@@ -541,6 +541,43 @@ class DeltaExchange(BaseExchange):
             "[DeltaExchange] Order %s for %s cancelled.", order_id, symbol
         )
         return True
+
+    def fetch_position(self, symbol: str) -> Optional[dict]:
+        """
+        Fetch open position for a symbol.
+        Returns the position dict if size != 0, else None (flat).
+        """
+        product_id = PRODUCT_IDS.get(symbol)
+        if product_id is None:
+            logger.error("[DeltaExchange] fetch_position: unknown symbol %s", symbol)
+            return None
+        data = self._signed_request(
+            "GET", "/v2/positions/margined",
+            params={"product_id": str(product_id)},
+        )
+        if data is None:
+            return None
+        result = data.get("result", {})
+        positions = result if isinstance(result, list) else ([result] if result else [])
+        for pos in positions:
+            if pos.get("product_id") == product_id and float(pos.get("size", 0)) != 0:
+                return pos
+        return None
+
+    def fetch_recent_fills(self, symbol: str, limit: int = 5) -> List[dict]:
+        """Fetch recent trade fills for a symbol (used to determine exit price)."""
+        product_id = PRODUCT_IDS.get(symbol)
+        if product_id is None:
+            return []
+        data = self._signed_request(
+            "GET", "/v2/fills",
+            params={"product_id": str(product_id), "limit": str(limit)},
+        )
+        if data is None:
+            return []
+        result = data.get("result", {})
+        fills = result.get("fills", result) if isinstance(result, dict) else result
+        return fills if isinstance(fills, list) else []
 
     def fetch_open_orders(self, symbol: str) -> List[OrderResult]:
         """Fetch all open orders for a symbol."""

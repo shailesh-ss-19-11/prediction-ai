@@ -236,6 +236,138 @@ def _save_live_orders() -> None:
         logger.exception("Failed to save live orders")
 
 
+_LIVE_POSITIONS_FILE = os.path.join(config.DATA_DIR, "live_positions.json")
+_live_positions: dict = {}  # symbol -> {direction, entry, sl, tp1, tp2, contracts, journal_id, opened_at}
+
+
+def _load_live_positions() -> None:
+    global _live_positions
+    try:
+        if os.path.exists(_LIVE_POSITIONS_FILE):
+            with open(_LIVE_POSITIONS_FILE, "r", encoding="utf-8") as fh:
+                _live_positions = json.load(fh)
+            logger.info("Loaded %d live position(s)", len(_live_positions))
+    except (OSError, ValueError, json.JSONDecodeError):
+        logger.exception("Failed to load live positions — starting fresh")
+        _live_positions = {}
+
+
+def _save_live_positions() -> None:
+    try:
+        os.makedirs(os.path.dirname(_LIVE_POSITIONS_FILE), exist_ok=True)
+        with open(_LIVE_POSITIONS_FILE, "w", encoding="utf-8") as fh:
+            json.dump(_live_positions, fh, indent=2)
+    except OSError:
+        logger.exception("Failed to save live positions")
+
+
+def _on_entry_filled(order_id: str, info: dict) -> None:
+    """Called when a limit entry order fills — starts tracking the open position."""
+    symbol    = info["symbol"]
+    direction = info["direction"]
+
+    if symbol not in _live_positions:
+        _live_positions[symbol] = {
+            "direction":  direction,
+            "entry":      info["entry"],
+            "sl":         info["sl"],
+            "tp1":        info.get("tp1", 0.0),
+            "tp2":        info.get("tp2", 0.0),
+            "contracts":  info["contracts"],
+            "journal_id": info.get("journal_id", ""),
+            "opened_at":  time.time(),
+        }
+        _save_live_positions()
+
+    logger.info("Entry filled — position open: %s %s | entry=%.2f | sl=%.2f | tp1=%.2f",
+                symbol, direction, info["entry"], info["sl"], info.get("tp1", 0))
+    telegram.send_text(
+        f"✅ <b>Entry Filled — Position Open</b>\n"
+        f"<b>{symbol} {direction}</b>\n"
+        f"├ Entry: ${info['entry']:,.2f}\n"
+        f"├ SL:    ${info['sl']:,.2f} (bracket active)\n"
+        f"└ TP1:   ${info.get('tp1', 0):,.2f} (bracket active)"
+    )
+
+
+def _check_position_closures() -> None:
+    """
+    Each scan, compare tracked live positions against Delta Exchange.
+    When a position disappears (SL or TP bracket filled), send Telegram
+    notification and close the matching journal record.
+    """
+    if not _live_positions:
+        return
+
+    to_remove = []
+    for symbol, info in list(_live_positions.items()):
+        try:
+            pos = exchange.fetch_position(symbol)
+        except Exception:
+            logger.exception("fetch_position failed for %s — skipping", symbol)
+            continue
+
+        if pos is not None:
+            continue  # position still open, nothing to do
+
+        # Position gone — SL or TP was hit on Delta Exchange
+        direction  = info["direction"]
+        entry      = info["entry"]
+        sl         = info["sl"]
+        tp1        = info["tp1"]
+        journal_id = info.get("journal_id", "")
+
+        # Try to get exit price from most recent fill
+        exit_price = 0.0
+        exit_reason = "unknown"
+        try:
+            fills = exchange.fetch_recent_fills(symbol, limit=5)
+            if fills:
+                exit_price = float(fills[0].get("price") or fills[0].get("fill_price") or 0)
+        except Exception:
+            logger.warning("fetch_recent_fills failed for %s", symbol)
+
+        # Determine SL vs TP from exit price proximity
+        if exit_price > 0:
+            sl_dist  = abs(exit_price - sl)
+            tp1_dist = abs(exit_price - tp1)
+            if tp1_dist < sl_dist:
+                exit_reason = "tp1_hit"
+                emoji = "🎯"
+                outcome = f"TP1 HIT at ${exit_price:,.2f}"
+            else:
+                exit_reason = "sl_hit"
+                emoji = "🛑"
+                outcome = f"SL HIT at ${exit_price:,.2f}"
+        else:
+            emoji = "📊"
+            outcome = "Position closed (check Delta for exit price)"
+
+        logger.info("Position CLOSED: %s %s | %s", symbol, direction, outcome)
+        telegram.send_text(
+            f"{emoji} <b>Position Closed — {symbol} {direction}</b>\n"
+            f"├ Entry:  ${entry:,.2f}\n"
+            f"├ SL:     ${sl:,.2f}\n"
+            f"├ TP1:    ${tp1:,.2f}\n"
+            f"└ Result: <b>{outcome}</b>"
+        )
+
+        if journal_id:
+            trade_journal.record_close(
+                trade_id    = journal_id,
+                exit_price  = exit_price,
+                exit_reason = exit_reason,
+                pnl         = None,
+            )
+
+        to_remove.append(symbol)
+
+    if to_remove:
+        for sym in to_remove:
+            _live_positions.pop(sym, None)
+        _save_live_positions()
+
+
 def _check_and_cancel_stale_orders() -> None:
     """
     On each scan, cross-check tracked live orders against Delta Exchange.
@@ -257,16 +389,18 @@ def _check_and_cancel_stale_orders() -> None:
             logger.exception("fetch_open_orders failed for %s — skipping stale check", symbol)
             return  # don't remove tracking if we couldn't confirm state
 
+    cancelled_by_us: set = set()
     to_remove = []
     for order_id, info in list(_live_orders.items()):
         symbol    = info["symbol"]
         direction = info["direction"]
         sl        = info["sl"]
 
-        # Order no longer open — filled or cancelled externally
+        # Order no longer open — either filled or cancelled externally
         if order_id not in open_order_ids:
-            logger.info("Order %s (%s %s) no longer open on exchange — removing tracking",
-                        order_id, symbol, direction)
+            if order_id not in cancelled_by_us:
+                # We didn't cancel it → it filled → position is now open on exchange
+                _on_entry_filled(order_id, info)
             to_remove.append(order_id)
             continue
 
@@ -284,6 +418,7 @@ def _check_and_cancel_stale_orders() -> None:
             logger.info("Cancelling stale order %s (%s %s): %s",
                         order_id, symbol, direction, reason)
             if exchange.cancel_order(order_id, symbol):
+                cancelled_by_us.add(order_id)
                 to_remove.append(order_id)
                 telegram.send_text(
                     f"🚫 <b>Order Cancelled</b> — {symbol} {direction}\n"
@@ -326,7 +461,7 @@ def _drop_forming_candle(df, timeframe: str):
 # Per-symbol check
 # ---------------------------------------------------------------------------
 
-def _place_live_order(symbol: str, setup, risk) -> None:
+def _place_live_order(symbol: str, setup, risk, journal_id: str = "") -> None:
     """Place a limit entry order on Delta Exchange when AUTO_TRADE is enabled."""
     try:
         side = "buy" if setup.direction == "LONG" else "sell"
@@ -354,7 +489,10 @@ def _place_live_order(symbol: str, setup, risk) -> None:
             "direction":  setup.direction,
             "entry":      setup.entry,
             "sl":         setup.stop_loss,
+            "tp1":        setup.tp1,
+            "tp2":        setup.tp2,
             "contracts":  contracts,
+            "journal_id": journal_id,
             "placed_at":  time.time(),
         }
         _save_live_orders()
@@ -483,11 +621,17 @@ def check_symbol(symbol: str) -> None:
                             symbol, setup.direction, remaining)
                 continue
 
-            # Never stack a second position in the same symbol+direction
-            # (restart-safety: cooldown alone can be lost with the process)
-            if any(t.symbol == symbol and t.direction == setup.direction
-                   for t in paper.get_open_trades()):
-                logger.info("%s %s: position already open — skipping duplicate",
+            # Never stack a second position in the same symbol+direction.
+            # Check paper engine (paper mode) AND live tracking dicts (live mode).
+            position_open = (
+                any(t.symbol == symbol and t.direction == setup.direction
+                    for t in paper.get_open_trades())
+                or symbol in _live_positions
+                or any(v["symbol"] == symbol and v["direction"] == setup.direction
+                       for v in _live_orders.values())
+            )
+            if position_open:
+                logger.info("%s %s: position or pending order already exists — skipping duplicate",
                             symbol, setup.direction)
                 continue
 
@@ -520,13 +664,14 @@ def check_symbol(symbol: str) -> None:
                 logger.debug("%s %s: conditions — %s",
                              symbol, setup.direction, " | ".join(setup.reasons))
 
-            # Paper trade — open position and capture the trade ID for journal
+            # Generate journal ID now so it can be linked to the live order
             trade_id = None
             if config.PAPER_TRADING_MODE:
                 trade = paper.open_trade(symbol, setup.direction, setup.entry,
                                          setup.stop_loss, setup.tp1, setup.tp2, risk.lot_size)
                 trade_id = trade.id
                 paper.save_to_file(os.path.join(config.DATA_DIR, "paper_trades.json"))
+            journal_id = trade_id or f"{symbol}_{int(time.time())}"
 
             # Send signal to Telegram
             sent = telegram.send_signal(
@@ -549,11 +694,11 @@ def check_symbol(symbol: str) -> None:
 
                 # Auto-execute limit order on Delta Exchange
                 if config.AUTO_TRADE and not config.PAPER_TRADING_MODE and config.DELTA_API_KEY:
-                    _place_live_order(symbol, setup, risk)
+                    _place_live_order(symbol, setup, risk, journal_id)
 
                 # Persist to trade journal
                 trade_journal.record_open(
-                    trade_id     = trade_id or f"{symbol}_{int(time.time())}",
+                    trade_id     = journal_id,
                     symbol       = symbol,
                     direction    = setup.direction,
                     entry        = setup.entry,
@@ -596,6 +741,12 @@ def run_checks() -> None:
             _check_and_cancel_stale_orders()
         except Exception:
             logger.exception("Stale order check failed")
+
+        # Detect positions closed by SL/TP bracket on Delta Exchange
+        try:
+            _check_position_closures()
+        except Exception:
+            logger.exception("Position closure check failed")
 
     # Close paper trades that hit SL/TP
     try:
@@ -662,6 +813,7 @@ def main() -> None:
     paper.load_from_file(os.path.join(config.DATA_DIR, "paper_trades.json"))
     _load_cooldowns()
     _load_live_orders()
+    _load_live_positions()
 
     # Start REST API server in background thread
     api_server.start_api_thread(paper)

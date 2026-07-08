@@ -33,9 +33,18 @@ _SL_ATR_MULT = 2.0
 # Minimum SL distance as a fraction of entry price (1.2% floor for crypto).
 _MIN_SL_PCT = 0.012
 
-# Price must be within this fraction of a key swing level to allow entry.
+# Price must be within this many ATRs of a key swing level to allow entry.
 # Trades fired from the middle of a range are blocked.
-_PROXIMITY_FILTER_PCT = 0.01
+#
+# WHY ATR AND NOT A FIXED %: the old fixed 1% filter contradicted the
+# momentum conditions. Conditions 3/5/7 (RSI in zone, directional volume
+# spike, MACD confirming) select moments of ACTIVE momentum — but a 15m
+# candle with a 1.5x volume spike typically carries price more than 1%
+# away from its recent swing low/high. And swing detection needs 5 bars
+# each side, so the freshest pivot is already ~75 minutes old. The two
+# requirements almost never coexisted → near-zero signals. 2x ATR scales
+# the allowed distance with current volatility instead.
+_PROXIMITY_ATR_MULT = 2.0
 
 # How many 15m bars to look back for the structural swing low/high used as SL.
 _SWING_SL_LOOKBACK = 20
@@ -178,9 +187,10 @@ def _nearest_swing_high(df: pd.DataFrame, entry: float, atr: float) -> float:
     return entry + _SL_ATR_MULT * atr
 
 
-def _is_price_near_key_level(df: pd.DataFrame, entry: float, direction: str) -> bool:
+def _is_price_near_key_level(df: pd.DataFrame, entry: float, direction: str,
+                             atr: float) -> bool:
     """
-    Return True only when the current price is within _PROXIMITY_FILTER_PCT
+    Return True only when the current price is within _PROXIMITY_ATR_MULT x ATR
     of a structural swing point on the side that favours the trade:
       LONG  → near a swing LOW  (support — room to run, SL behind the level)
       SHORT → near a swing HIGH (resistance — same logic mirrored)
@@ -188,7 +198,7 @@ def _is_price_near_key_level(df: pd.DataFrame, entry: float, direction: str) -> 
     resistance), which is exactly where reversals stop trades out.
     Trades from the middle of a range return False.
     """
-    if df is None or len(df) < 11:
+    if df is None or len(df) < 11 or atr <= 0:
         return False
     window = df.iloc[-50:] if len(df) >= 50 else df
     swing_pts = find_swing_points(window, lookback=5)
@@ -196,8 +206,9 @@ def _is_price_near_key_level(df: pd.DataFrame, entry: float, direction: str) -> 
         relevant = [sp for sp in swing_pts if sp.swing_type in ("low", "HL", "LL")]
     else:
         relevant = [sp for sp in swing_pts if sp.swing_type in ("high", "HH", "LH")]
+    max_dist = _PROXIMITY_ATR_MULT * atr
     for sp in relevant:
-        if abs(entry - sp.price) / entry <= _PROXIMITY_FILTER_PCT:
+        if abs(entry - sp.price) <= max_dist:
             return True
     return False
 
@@ -479,10 +490,10 @@ class TrendStrategy:
             )
             return None
 
-        # Mandatory: volume spike must be present — no conviction without volume
-        if not c5_ok:
-            logger.debug("[Strategy] %s LONG: no volume spike — mandatory condition not met", symbol)
-            return None
+        # Volume spike (c5) is now a SCORED condition, not a mandatory gate.
+        # As a hard gate it required the exact last closed 15m candle to spike
+        # at the same instant every other condition aligned — a major reason
+        # zero signals fired. It still contributes to the 6/7 count above.
 
         # Mandatory: 1h RSI must confirm bullish momentum (above 50)
         rsi_1h = indicators_1h.rsi_14
@@ -495,10 +506,10 @@ class TrendStrategy:
 
         # Pre-trade proximity filter: skip trades fired from the middle of a range
         # or at the wrong side of the range (longs must be near support).
-        if not _is_price_near_key_level(df_15m, close, "LONG"):
+        if not _is_price_near_key_level(df_15m, close, "LONG", atr):
             logger.debug(
-                "[Strategy] %s LONG: price %.4f not within %.1f%% of support — skipping.",
-                symbol, close, _PROXIMITY_FILTER_PCT * 100,
+                "[Strategy] %s LONG: price %.4f not within %.1fxATR of support — skipping.",
+                symbol, close, _PROXIMITY_ATR_MULT,
             )
             return None
 
@@ -512,8 +523,8 @@ class TrendStrategy:
         entry       = close
         swing_low   = _nearest_swing_low(df_15m, entry, atr)
         struct_sl   = swing_low - 0.2 * atr          # small buffer below the pivot
-        atr_sl      = entry - _SL_ATR_MULT * atr     # 1.5× ATR below entry
-        pct_sl      = entry * (1.0 - _MIN_SL_PCT)    # 0.8% below entry
+        atr_sl      = entry - _SL_ATR_MULT * atr     # 2.0x ATR below entry
+        pct_sl      = entry * (1.0 - _MIN_SL_PCT)    # 1.2% below entry
         stop_loss   = min(struct_sl, atr_sl, pct_sl) # widest (lowest) wins
         risk        = entry - stop_loss
 
@@ -661,10 +672,8 @@ class TrendStrategy:
             )
             return None
 
-        # Mandatory: volume spike must be present — no conviction without volume
-        if not c5_ok:
-            logger.debug("[Strategy] %s SHORT: no volume spike — mandatory condition not met", symbol)
-            return None
+        # Volume spike (c5) is now a SCORED condition, not a mandatory gate
+        # (see the LONG-side note for the rationale).
 
         # Mandatory: 1h RSI must confirm bearish momentum (below 50)
         rsi_1h = indicators_1h.rsi_14
@@ -677,10 +686,10 @@ class TrendStrategy:
 
         # Pre-trade proximity filter: skip trades fired from the middle of a range
         # or at the wrong side of the range (shorts must be near resistance).
-        if not _is_price_near_key_level(df_15m, close, "SHORT"):
+        if not _is_price_near_key_level(df_15m, close, "SHORT", atr):
             logger.debug(
-                "[Strategy] %s SHORT: price %.4f not within %.1f%% of resistance — skipping.",
-                symbol, close, _PROXIMITY_FILTER_PCT * 100,
+                "[Strategy] %s SHORT: price %.4f not within %.1fxATR of resistance — skipping.",
+                symbol, close, _PROXIMITY_ATR_MULT,
             )
             return None
 
@@ -694,8 +703,8 @@ class TrendStrategy:
         entry       = close
         swing_high  = _nearest_swing_high(df_15m, entry, atr)
         struct_sl   = swing_high + 0.2 * atr          # small buffer above the pivot
-        atr_sl      = entry + _SL_ATR_MULT * atr      # 1.5× ATR above entry
-        pct_sl      = entry * (1.0 + _MIN_SL_PCT)     # 0.8% above entry
+        atr_sl      = entry + _SL_ATR_MULT * atr      # 2.0x ATR above entry
+        pct_sl      = entry * (1.0 + _MIN_SL_PCT)     # 1.2% above entry
         stop_loss   = max(struct_sl, atr_sl, pct_sl)  # widest (highest) wins
         risk        = stop_loss - entry
 

@@ -351,13 +351,20 @@ def _check_position_closures() -> None:
             emoji = "📊"
             outcome = "Position closed (check Delta for exit price)"
 
-        # Compute PnL from contract size and price move
+        # Compute PnL from contract size and price move.
+        # 1 contract = $1 USD notional (see _place_live_order), so the coin
+        # quantity is contracts / entry. The old code multiplied the price
+        # move by the raw contract count, overstating PnL by ~the asset price
+        # (a $100 BTC move on 1 contract reported as $100 instead of ~$0.0017).
+        # NOTE: verify against Delta India's contract spec per symbol — if a
+        # symbol uses a different contract size, adjust the qty formula.
         pnl = None
-        if exit_price > 0 and contracts > 0:
+        if exit_price > 0 and contracts > 0 and entry > 0:
+            qty = contracts / entry  # coins represented by the position
             if direction == "LONG":
-                pnl = round((exit_price - entry) * contracts, 6)
+                pnl = round((exit_price - entry) * qty, 6)
             else:
-                pnl = round((entry - exit_price) * contracts, 6)
+                pnl = round((entry - exit_price) * qty, 6)
 
         logger.info("Position CLOSED: %s %s | %s | pnl=%s", symbol, direction, outcome, pnl)
         telegram.send_text(

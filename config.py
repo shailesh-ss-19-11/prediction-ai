@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()  # loads .env locally; on Railway env vars are already set
 
 # --- Logging ---
-LOG_LEVEL        = "INFO"          # DEBUG | INFO | WARNING | ERROR
+LOG_LEVEL        = "DEBUG"         # DEBUG while diagnosing why no signals fire; set back to INFO later
 LOG_TO_FILE      = True
 LOG_DIR          = "logs"
 LOG_FILE         = "logs/bot.log"
@@ -18,8 +18,13 @@ LOG_MAX_BYTES    = 5 * 1024 * 1024   # 5 MB per file
 LOG_BACKUP_COUNT = 5                  # keep last 5 rotated files
 
 # --- Telegram ---
-TELEGRAM_BOT_TOKEN = "8800960300:AAExwJ0q7WkWipz2RkvKw9-4Y28ePM5TAUc"   # From @BotFather
-TELEGRAM_CHAT_IDS  = ["1948356544", "7151542571"]   # Add more chat IDs here
+# SECURITY: never hardcode the bot token here — this file is public on GitHub.
+# The previously committed token is compromised; revoke it via @BotFather
+# and set a NEW token in the environment (Railway Variables or .env):
+#   TELEGRAM_BOT_TOKEN=123456:ABC...
+#   TELEGRAM_CHAT_IDS=1948356544,7151542571
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_CHAT_IDS  = [c.strip() for c in os.environ.get("TELEGRAM_CHAT_IDS", "").split(",") if c.strip()]
 
 # --- Account ---
 ACCOUNT_BALANCE    = 3    # USD — actual balance on Delta Exchange
@@ -42,6 +47,10 @@ SEND_PREPARE_ALERTS = False
 # Get testnet API keys and set TESTNET_APIKEY / TESTNET_SECRET in your .env
 USE_TESTNET = False
 
+# NOTE: API keys are chosen here too — the mainnet keys used to be assigned
+# unconditionally further down, which silently OVERWROTE the testnet keys
+# (testnet mode would hit testnet URLs with mainnet credentials). Fixed by
+# selecting both URLs and keys in one place.
 if USE_TESTNET:
     BASE_URL = "https://cdn-ind-testnet.deltaex.org"
     WS_URL   = "wss://testnet-socket.india.delta.exchange"
@@ -50,6 +59,8 @@ if USE_TESTNET:
 else:
     BASE_URL = "https://api.india.delta.exchange"
     WS_URL   = "wss://socket.india.delta.exchange"
+    DELTA_API_KEY    = os.environ.get("APIKEY", "")
+    DELTA_API_SECRET = os.environ.get("SECRET", "")
 
 REQUEST_TIMEOUT = 15     # seconds
 
@@ -75,12 +86,10 @@ ATR_PREPARE_MULT = 0.5
 CHECK_INTERVAL_MINUTES = 5   # run every N minutes
 RESET_TRACKER_HOURS    = 4   # clear duplicate tracker every N hours
 
-# --- Exchange API keys (set APIKEY and SECRET in Railway Variables or .env) ---
-# For testnet keys, set TESTNET_APIKEY and TESTNET_SECRET instead.
-# These are overridden below if USE_TESTNET = True.
-DELTA_API_KEY    = os.environ.get("APIKEY", "")
-DELTA_API_SECRET = os.environ.get("SECRET", "")
-
+# --- Exchange API keys ---
+# DELTA_API_KEY / DELTA_API_SECRET are set in the USE_TESTNET block above.
+# Live keys:    APIKEY / SECRET env vars
+# Testnet keys: TESTNET_APIKEY / TESTNET_SECRET env vars
 BINANCE_API_KEY  = ""
 BINANCE_API_SECRET = ""
 BYBIT_API_KEY    = ""
@@ -91,7 +100,7 @@ ACTIVE_EXCHANGE  = "delta"   # delta | binance | bybit
 TRADINGVIEW_SECRET = ""
 
 # --- Trading mode ---
-PAPER_TRADING_MODE    = False  # True = paper, False = live
+PAPER_TRADING_MODE    = True   # KEEP True until the loosened strategy is validated on paper (2+ weeks)
 AUTO_TRADE            = True   # Auto-place limit orders on Delta Exchange when signal fires
 MAX_CONTRACTS_PER_TRADE = 1   # Hard cap — 1 contract = $1 notional. Safe for $3 balance.
 MAX_DAILY_LOSS_PERCENT = 3.0
@@ -117,6 +126,6 @@ EMAIL_RECIPIENT     = ""
 # --- News sentiment ---
 # Alpha Vantage free key → https://www.alphavantage.co/support/#api-key
 # Leave blank to use CryptoPanic only (BTC/ETH); gold news will be skipped.
-ALPHA_VANTAGE_KEY      = "J7SYW39BC8EUC9V5"
+ALPHA_VANTAGE_KEY      = os.environ.get("ALPHA_VANTAGE_KEY", "")
 NEWS_SENTIMENT_HOURS   = 6    # scan headlines from last N hours
 NEWS_CACHE_MINUTES     = 30   # cache results to stay within free-tier limits

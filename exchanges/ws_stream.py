@@ -49,8 +49,13 @@ def _on_message(ws, raw):
         if symbol not in config.SYMBOLS:
             return
 
-        data   = msg.get("data", {})
-        quotes = data.get("quotes", {})
+        # Delta's v2/ticker payload carries quotes/mark_price/close at the TOP
+        # level of the message, not nested under a "data" key. The old code
+        # read msg["data"] (always empty), so no price was ever cached and
+        # every lookup silently fell back to REST. Handle both shapes.
+        data = msg if ("quotes" in msg or "mark_price" in msg or "close" in msg) \
+            else (msg.get("data") or {})
+        quotes = data.get("quotes") or {}
 
         # Prefer bid/ask mid — matches what the app shows
         try:

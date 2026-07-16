@@ -3137,3 +3137,329 @@
 2026-06-17 12:26:01 [WARNING] notifications.telegram — Telegram chat_id=7151542571 attempt 2/3 failed: HTTPSConnectionPool(host='api.telegram.org', port=443): Max retries exceeded with url: /bot8800960300:AAExwJ0q7WkWipz2RkvKw9-4Y28ePM5TAUc/sendMessage (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x000001D2F0E8B890>, 'Connection to api.telegram.org timed out. (connect timeout=10)'))
 2026-06-17 12:26:03 [DEBUG] websocket — Sending ping
 2026-06-17 12:26:06 [DEBUG] urllib3.connectionpool — Starting new HTTPS connection (1): api.telegram.org:443
+2026-07-15 16:57:26 [WARNING] execution.paper_trading — [Paper] File not found: data\paper_trades.json. Nothing loaded.
+2026-07-15 16:57:26 [INFO] exchanges.ws_stream — WebSocket stream started for ['BTCUSD', 'ETHUSD', 'XAUTUSD']
+2026-07-15 16:57:26 [INFO] main — Waiting 3s for WebSocket to connect...
+2026-07-15 16:57:26 [INFO] werkzeug — [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.15.0.162:5000
+2026-07-15 16:57:26 [INFO] werkzeug — [33mPress CTRL+C to quit[0m
+2026-07-15 16:57:26 [INFO] websocket — Websocket connected
+2026-07-15 16:57:26 [INFO] exchanges.ws_stream — WebSocket connected — subscribing to tickers
+2026-07-15 16:57:29 [WARNING] notifications.telegram — Telegram not configured — message not sent:
+✅ <b>DeltaSignalBot v2 started</b>
+Symbols: <b>BTCUSD, ETHUSD, XAUTUSD</b>
+Mode: <b>Paper</b> | Every <b>5min</b>
+2026-07-15 16:57:29 [DEBUG] urllib3.connectionpool — Starting new HTTPS connection (1): api.ipify.org:443
+2026-07-15 16:57:29 [DEBUG] urllib3.connectionpool — https://api.ipify.org:443 "GET / HTTP/1.1" 200 13
+2026-07-15 16:57:29 [INFO] main — Outbound IP recorded: 27.107.168.78
+2026-07-15 16:57:29 [WARNING] notifications.telegram — Telegram not configured — message not sent:
+🌐 <b>Bot Started — Outbound IP</b>
+
+IP: <code>27.107.168.78</code>
+
+Whitelist this IP on Delta Exchange if not already done.
+2026-07-15 16:57:29 [INFO] main — === Scan started | symbols=['BTCUSD', 'ETHUSD', 'XAUTUSD'] ===
+2026-07-15 16:57:29 [DEBUG] main — Live prices: {'BTCUSD': '64,612.50', 'ETHUSD': '1,877.15', 'XAUTUSD': '4,033.21'}
+2026-07-15 16:57:29 [INFO] execution.paper_trading — [Paper] State saved to data\paper_trades.json.
+2026-07-15 16:57:29 [DEBUG] core.advanced_filters — [OvertradingFilter] Daily counters reset.
+2026-07-15 16:57:29 [DEBUG] main — BTCUSD: price $64612.50 (source=WS)
+2026-07-15 16:57:29 [INFO] core.market_data — [MarketData] Fetching BTCUSD 1m (20 candles)…
+2026-07-15 16:57:29 [DEBUG] urllib3.connectionpool — Starting new HTTPS connection (1): api.india.delta.exchange:443
+2026-07-15 16:57:30 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1m&symbol=BTCUSD&start=1784113349&end=1784114849 HTTP/1.1" 200 None
+2026-07-15 16:57:30 [INFO] core.market_data — [MarketData] Cached 20 candles for BTCUSD 1m
+2026-07-15 16:57:30 [INFO] core.market_data — [MarketData] Fetching BTCUSD 5m (30 candles)…
+2026-07-15 16:57:30 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=5m&symbol=BTCUSD&start=1784104350&end=1784114850 HTTP/1.1" 200 None
+2026-07-15 16:57:30 [INFO] core.market_data — [MarketData] Cached 30 candles for BTCUSD 5m
+2026-07-15 16:57:30 [INFO] core.market_data — [MarketData] Fetching BTCUSD 15m (60 candles)…
+2026-07-15 16:57:30 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=15m&symbol=BTCUSD&start=1784056350&end=1784114850 HTTP/1.1" 200 None
+2026-07-15 16:57:30 [INFO] core.market_data — [MarketData] Cached 60 candles for BTCUSD 15m
+2026-07-15 16:57:30 [INFO] core.market_data — [MarketData] Fetching BTCUSD 1h (250 candles)…
+2026-07-15 16:57:30 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1h&symbol=BTCUSD&start=1783196850&end=1784114850 HTTP/1.1" 200 None
+2026-07-15 16:57:30 [INFO] core.market_data — [MarketData] Cached 250 candles for BTCUSD 1h
+2026-07-15 16:57:30 [INFO] core.market_data — [MarketData] Fetching BTCUSD 4h (300 candles)…
+2026-07-15 16:57:31 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=4h&symbol=BTCUSD&start=1779722850&end=1784114850 HTTP/1.1" 200 None
+2026-07-15 16:57:31 [INFO] core.market_data — [MarketData] Cached 300 candles for BTCUSD 4h
+2026-07-15 16:57:31 [INFO] core.market_data — [MarketData] Fetching BTCUSD 1d (200 candles)…
+2026-07-15 16:57:31 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1d&symbol=BTCUSD&start=1766402851&end=1784114851 HTTP/1.1" 200 None
+2026-07-15 16:57:31 [INFO] core.market_data — [MarketData] Cached 200 candles for BTCUSD 1d
+2026-07-15 16:57:31 [DEBUG] main — BTCUSD indicators — RSI15m:50.7 EMA20_1h:64469.03 EMA200_4h:63709.36 ATR:134.9925
+2026-07-15 16:57:31 [DEBUG] main — BTCUSD: 4h structure bias=bearish | patterns detected=1
+2026-07-15 16:57:31 [DEBUG] main — BTCUSD: SMC — OBs=1 FVGs=3
+2026-07-15 16:57:31 [DEBUG] core.strategy — [Strategy] BTCUSD daily gate: EMA20=63248.35 EMA50=65119.98 long_ok=False short_ok=True
+2026-07-15 16:57:31 [DEBUG] core.strategy — [Strategy] BTCUSD LONG blocked by daily downtrend gate.
+2026-07-15 16:57:31 [DEBUG] core.strategy — [Strategy] BTCUSD SHORT: only 1/7 conditions met.
+2026-07-15 16:57:31 [INFO] main — BTCUSD $64,612.50 | trend:bullish | bias:bearish | RSI:50.7 | no setup
+2026-07-15 16:57:31 [DEBUG] main — ETHUSD: price $1877.15 (source=WS)
+2026-07-15 16:57:31 [INFO] core.market_data — [MarketData] Fetching ETHUSD 1m (20 candles)…
+2026-07-15 16:57:31 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=1m&symbol=ETHUSD&start=1784113351&end=1784114851 HTTP/1.1" 200 None
+2026-07-15 16:57:31 [INFO] core.market_data — [MarketData] Cached 20 candles for ETHUSD 1m
+2026-07-15 16:57:31 [INFO] core.market_data — [MarketData] Fetching ETHUSD 5m (30 candles)…
+2026-07-15 16:57:31 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=5m&symbol=ETHUSD&start=1784104351&end=1784114851 HTTP/1.1" 200 None
+2026-07-15 16:57:31 [INFO] core.market_data — [MarketData] Cached 30 candles for ETHUSD 5m
+2026-07-15 16:57:31 [INFO] core.market_data — [MarketData] Fetching ETHUSD 15m (60 candles)…
+2026-07-15 16:57:31 [DEBUG] urllib3.connectionpool — https://api.india.delta.exchange:443 "GET /v2/history/candles?resolution=15m&symbol=ETHUSD&start=1784056351&end=1784114851 HTTP/1.1" 200 None
+2026-07-15 16:57:31 [INFO] core.market_data — [MarketData] Cached 60 candles for ETHUSD 15m
+2026-07-15 16:57:31 [INFO] core.market_data — [MarketData] Fetching ETHUSD 1h (250 candles)…
+2026-07-15 16:58:26 [DEBUG] websocket — Sending ping
+2026-07-15 16:58:57 [DEBUG] websocket — Sending ping
+2026-07-15 16:59:27 [DEBUG] websocket — Sending ping
+2026-07-15 16:59:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:00:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:00:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:01:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:01:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:02:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:02:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:03:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:03:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:04:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:04:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:05:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:05:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:06:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:06:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:07:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:07:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:08:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:08:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:09:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:09:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:10:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:10:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:11:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:11:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:12:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:12:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:13:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:13:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:14:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:14:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:15:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:15:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:16:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:16:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:17:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:17:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:18:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:18:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:19:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:19:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:20:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:20:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:21:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:21:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:22:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:22:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:23:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:23:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:24:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:24:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:25:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:25:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:26:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:26:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:27:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:27:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:28:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:28:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:29:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:29:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:30:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:30:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:31:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:31:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:32:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:32:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:33:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:33:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:34:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:34:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:35:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:35:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:36:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:36:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:37:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:37:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:38:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:38:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:39:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:39:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:40:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:40:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:41:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:41:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:42:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:42:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:43:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:43:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:44:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:44:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:45:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:45:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:46:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:46:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:47:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:47:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:48:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:48:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:49:27 [DEBUG] websocket — Sending ping
+2026-07-15 17:49:57 [DEBUG] websocket — Sending ping
+2026-07-15 17:53:21 [WARNING] exchanges.ws_stream — WebSocket error: Connection to remote host was lost.
+2026-07-15 17:53:21 [ERROR] websocket — Connection to remote host was lost. - goodbye
+2026-07-15 17:53:21 [WARNING] exchanges.ws_stream — WebSocket closed (code=None) — will reconnect
+2026-07-15 18:28:39 [WARNING] exchanges.ws_stream — WebSocket error: [Errno 11001] getaddrinfo failed
+2026-07-15 18:28:39 [ERROR] websocket — [Errno 11001] getaddrinfo failed - goodbye
+2026-07-15 18:28:39 [WARNING] exchanges.ws_stream — WebSocket closed (code=None) — will reconnect
+2026-07-15 18:28:51 [INFO] websocket — Websocket connected
+2026-07-15 18:28:51 [INFO] exchanges.ws_stream — WebSocket connected — subscribing to tickers
+2026-07-15 18:29:51 [DEBUG] websocket — Sending ping
+2026-07-15 18:30:21 [DEBUG] websocket — Sending ping
+2026-07-15 18:30:51 [DEBUG] websocket — Sending ping
+2026-07-15 18:31:21 [DEBUG] websocket — Sending ping
+2026-07-15 18:31:51 [DEBUG] websocket — Sending ping
+2026-07-15 18:32:21 [DEBUG] websocket — Sending ping
+2026-07-15 18:32:51 [DEBUG] websocket — Sending ping
+2026-07-15 18:33:21 [DEBUG] websocket — Sending ping
+2026-07-15 18:33:51 [DEBUG] websocket — Sending ping
+2026-07-15 19:16:42 [WARNING] exchanges.ws_stream — WebSocket error: Connection to remote host was lost.
+2026-07-15 19:16:43 [ERROR] websocket — Connection to remote host was lost. - goodbye
+2026-07-15 19:16:43 [WARNING] exchanges.ws_stream — WebSocket closed (code=None) — will reconnect
+2026-07-15 23:16:12 [WARNING] exchanges.ws_stream — WebSocket error: [Errno 11001] getaddrinfo failed
+2026-07-15 23:16:12 [ERROR] websocket — [Errno 11001] getaddrinfo failed - goodbye
+2026-07-15 23:16:12 [WARNING] exchanges.ws_stream — WebSocket closed (code=None) — will reconnect
+2026-07-16 09:37:30 [INFO] websocket — Websocket connected
+2026-07-16 09:37:30 [INFO] exchanges.ws_stream — WebSocket connected — subscribing to tickers
+2026-07-16 09:38:30 [DEBUG] websocket — Sending ping
+2026-07-16 09:39:00 [DEBUG] websocket — Sending ping
+2026-07-16 09:39:30 [DEBUG] websocket — Sending ping
+2026-07-16 09:40:00 [DEBUG] websocket — Sending ping
+2026-07-16 09:40:30 [DEBUG] websocket — Sending ping
+2026-07-16 09:41:00 [DEBUG] websocket — Sending ping
+2026-07-16 09:41:30 [DEBUG] websocket — Sending ping
+2026-07-16 09:42:00 [DEBUG] websocket — Sending ping
+2026-07-16 09:42:30 [DEBUG] websocket — Sending ping
+2026-07-16 09:43:00 [DEBUG] websocket — Sending ping
+2026-07-16 09:43:30 [DEBUG] websocket — Sending ping
+2026-07-16 09:44:00 [DEBUG] websocket — Sending ping
+2026-07-16 09:44:30 [DEBUG] websocket — Sending ping
+2026-07-16 09:45:00 [DEBUG] websocket — Sending ping
+2026-07-16 09:45:30 [DEBUG] websocket — Sending ping
+2026-07-16 09:46:00 [DEBUG] websocket — Sending ping
+2026-07-16 09:46:30 [DEBUG] websocket — Sending ping
+2026-07-16 09:47:00 [DEBUG] websocket — Sending ping
+2026-07-16 09:47:31 [DEBUG] websocket — Sending ping
+2026-07-16 09:48:01 [DEBUG] websocket — Sending ping
+2026-07-16 09:48:31 [DEBUG] websocket — Sending ping
+2026-07-16 09:49:01 [DEBUG] websocket — Sending ping
+2026-07-16 09:49:31 [DEBUG] websocket — Sending ping
+2026-07-16 09:50:01 [DEBUG] websocket — Sending ping
+2026-07-16 09:50:31 [DEBUG] websocket — Sending ping
+2026-07-16 09:51:01 [DEBUG] websocket — Sending ping
+2026-07-16 09:51:31 [DEBUG] websocket — Sending ping
+2026-07-16 09:52:01 [DEBUG] websocket — Sending ping
+2026-07-16 09:52:31 [DEBUG] websocket — Sending ping
+2026-07-16 09:53:01 [DEBUG] websocket — Sending ping
+2026-07-16 09:53:31 [DEBUG] websocket — Sending ping
+2026-07-16 09:54:01 [DEBUG] websocket — Sending ping
+2026-07-16 09:54:31 [DEBUG] websocket — Sending ping
+2026-07-16 09:55:01 [DEBUG] websocket — Sending ping
+2026-07-16 09:55:31 [DEBUG] websocket — Sending ping
+2026-07-16 09:56:01 [DEBUG] websocket — Sending ping
+2026-07-16 09:56:31 [DEBUG] websocket — Sending ping
+2026-07-16 09:57:01 [DEBUG] websocket — Sending ping
+2026-07-16 09:57:31 [DEBUG] websocket — Sending ping
+2026-07-16 09:58:01 [DEBUG] websocket — Sending ping
+2026-07-16 09:58:31 [DEBUG] websocket — Sending ping
+2026-07-16 09:59:01 [DEBUG] websocket — Sending ping
+2026-07-16 09:59:31 [DEBUG] websocket — Sending ping
+2026-07-16 10:00:01 [DEBUG] websocket — Sending ping
+2026-07-16 10:00:31 [DEBUG] websocket — Sending ping
+2026-07-16 10:01:01 [DEBUG] websocket — Sending ping
+2026-07-16 10:01:31 [DEBUG] websocket — Sending ping
+2026-07-16 10:02:01 [DEBUG] websocket — Sending ping
+2026-07-16 10:02:31 [DEBUG] websocket — Sending ping
+2026-07-16 10:03:01 [DEBUG] websocket — Sending ping
+2026-07-16 10:03:31 [DEBUG] websocket — Sending ping
+2026-07-16 10:04:01 [DEBUG] websocket — Sending ping
+2026-07-16 10:04:31 [DEBUG] websocket — Sending ping
+2026-07-16 10:05:01 [DEBUG] websocket — Sending ping
+2026-07-16 10:05:31 [DEBUG] websocket — Sending ping
+2026-07-16 10:06:01 [DEBUG] websocket — Sending ping
+2026-07-16 10:06:31 [DEBUG] websocket — Sending ping
+2026-07-16 10:07:01 [DEBUG] websocket — Sending ping
+2026-07-16 10:07:31 [DEBUG] websocket — Sending ping
+2026-07-16 10:08:01 [DEBUG] websocket — Sending ping
+2026-07-16 10:08:31 [DEBUG] websocket — Sending ping
+2026-07-16 10:09:01 [DEBUG] websocket — Sending ping
+2026-07-16 10:09:31 [DEBUG] websocket — Sending ping
+2026-07-16 10:10:01 [DEBUG] websocket — Sending ping
+2026-07-16 10:10:31 [DEBUG] websocket — Sending ping
+2026-07-16 10:11:01 [DEBUG] websocket — Sending ping
+2026-07-16 10:11:31 [DEBUG] websocket — Sending ping
+2026-07-16 10:12:01 [DEBUG] websocket — Sending ping
+2026-07-16 10:12:31 [DEBUG] websocket — Sending ping
+2026-07-16 10:13:01 [DEBUG] websocket — Sending ping
+2026-07-16 10:13:31 [DEBUG] websocket — Sending ping
+2026-07-16 10:14:01 [DEBUG] websocket — Sending ping
+2026-07-16 10:14:31 [DEBUG] websocket — Sending ping
+2026-07-16 10:15:01 [DEBUG] websocket — Sending ping
+2026-07-16 10:15:31 [DEBUG] websocket — Sending ping
+2026-07-16 10:16:01 [DEBUG] websocket — Sending ping
+2026-07-16 10:16:31 [DEBUG] websocket — Sending ping
+2026-07-16 10:17:01 [DEBUG] websocket — Sending ping
+2026-07-16 10:17:31 [DEBUG] websocket — Sending ping
+2026-07-16 10:18:01 [DEBUG] websocket — Sending ping
+2026-07-16 10:18:31 [DEBUG] websocket — Sending ping
+2026-07-16 10:19:01 [DEBUG] websocket — Sending ping
+2026-07-16 10:19:31 [DEBUG] websocket — Sending ping
+2026-07-16 10:20:01 [DEBUG] websocket — Sending ping
+2026-07-16 10:20:31 [DEBUG] websocket — Sending ping
+2026-07-16 10:21:01 [DEBUG] websocket — Sending ping
+2026-07-16 10:21:31 [DEBUG] websocket — Sending ping
+2026-07-16 10:22:01 [DEBUG] websocket — Sending ping
+2026-07-16 10:22:31 [DEBUG] websocket — Sending ping
+2026-07-16 10:23:01 [DEBUG] websocket — Sending ping
+2026-07-16 10:23:31 [DEBUG] websocket — Sending ping
+2026-07-16 10:24:01 [DEBUG] websocket — Sending ping
+2026-07-16 10:24:31 [DEBUG] websocket — Sending ping
+2026-07-16 10:25:01 [DEBUG] websocket — Sending ping
+2026-07-16 10:25:31 [DEBUG] websocket — Sending ping
+2026-07-16 10:26:01 [DEBUG] websocket — Sending ping
+2026-07-16 10:26:31 [DEBUG] websocket — Sending ping
+2026-07-16 10:27:01 [DEBUG] websocket — Sending ping
+2026-07-16 10:27:31 [DEBUG] websocket — Sending ping
+2026-07-16 10:28:01 [DEBUG] websocket — Sending ping
+2026-07-16 10:28:31 [DEBUG] websocket — Sending ping
+2026-07-16 10:29:01 [DEBUG] websocket — Sending ping
+2026-07-16 10:29:31 [DEBUG] websocket — Sending ping
+2026-07-16 10:30:01 [DEBUG] websocket — Sending ping
+2026-07-16 10:30:31 [DEBUG] websocket — Sending ping
+2026-07-16 10:31:01 [DEBUG] websocket — Sending ping
+2026-07-16 10:31:31 [DEBUG] websocket — Sending ping
+2026-07-16 10:32:01 [DEBUG] websocket — Sending ping
+2026-07-16 10:32:32 [DEBUG] websocket — Sending ping
+2026-07-16 10:33:02 [DEBUG] websocket — Sending ping
+2026-07-16 10:33:32 [DEBUG] websocket — Sending ping
+2026-07-16 10:34:02 [DEBUG] websocket — Sending ping
+2026-07-16 10:34:32 [DEBUG] websocket — Sending ping
+2026-07-16 10:35:02 [DEBUG] websocket — Sending ping
+2026-07-16 10:35:32 [DEBUG] websocket — Sending ping
+2026-07-16 10:36:02 [DEBUG] websocket — Sending ping
+2026-07-16 10:36:32 [DEBUG] websocket — Sending ping
+2026-07-16 10:37:02 [DEBUG] websocket — Sending ping
+2026-07-16 10:37:32 [DEBUG] websocket — Sending ping
+2026-07-16 10:38:02 [DEBUG] websocket — Sending ping
+2026-07-16 10:38:32 [DEBUG] websocket — Sending ping
+2026-07-16 10:39:02 [DEBUG] websocket — Sending ping
+2026-07-16 10:39:32 [DEBUG] websocket — Sending ping
+2026-07-16 10:40:02 [DEBUG] websocket — Sending ping
+2026-07-16 10:40:32 [DEBUG] websocket — Sending ping
+2026-07-16 10:41:02 [DEBUG] websocket — Sending ping
+2026-07-16 10:41:32 [DEBUG] websocket — Sending ping
+2026-07-16 10:42:02 [DEBUG] websocket — Sending ping
+2026-07-16 10:42:32 [DEBUG] websocket — Sending ping
+2026-07-16 10:43:02 [DEBUG] websocket — Sending ping
+2026-07-16 10:43:32 [DEBUG] websocket — Sending ping
+2026-07-16 10:44:02 [DEBUG] websocket — Sending ping

@@ -1,3 +1,7 @@
 2026-06-17 12:24:15 [ERROR] notifications.telegram — Telegram message failed for chat_id=1948356544 after 3 attempts
 2026-06-17 12:24:55 [ERROR] notifications.telegram — Telegram message failed for chat_id=7151542571 after 3 attempts
 2026-06-17 12:25:36 [ERROR] notifications.telegram — Telegram message failed for chat_id=1948356544 after 3 attempts
+2026-07-15 17:53:21 [ERROR] websocket — Connection to remote host was lost. - goodbye
+2026-07-15 18:28:39 [ERROR] websocket — [Errno 11001] getaddrinfo failed - goodbye
+2026-07-15 19:16:43 [ERROR] websocket — Connection to remote host was lost. - goodbye
+2026-07-15 23:16:12 [ERROR] websocket — [Errno 11001] getaddrinfo failed - goodbye

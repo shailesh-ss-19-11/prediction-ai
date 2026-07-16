@@ -109,8 +109,19 @@ USE_AI_ENGINE          = False  # flip True when ready
 
 # --- Data directory (Railway Volume mounted at /data, or local ./data) ---
 import os as _os
+import sys as _sys
 DATA_DIR = _os.environ.get("DATA_DIR", "data")
-_os.makedirs(DATA_DIR, exist_ok=True)
+try:
+    _os.makedirs(DATA_DIR, exist_ok=True)
+except OSError as _err:
+    # DATA_DIR can name a mount that does not exist on this host (e.g. /data
+    # with no volume attached). This runs at import, before logging is set up,
+    # so an uncaught error here kills the process with no usable output.
+    print(f"[config] DATA_DIR={DATA_DIR!r} is not writable ({_err}) — "
+          f"falling back to './data'. Saved state will NOT persist across restarts.",
+          file=_sys.stderr)
+    DATA_DIR = "data"
+    _os.makedirs(DATA_DIR, exist_ok=True)
 
 # --- Database ---
 DATABASE_URL = f"sqlite:///{DATA_DIR}/tradesignal.db"

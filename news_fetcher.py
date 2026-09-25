@@ -308,3 +308,52 @@ def sentiment_conflicts(direction: str, sentiment: SentimentResult) -> bool:
     if direction == "SHORT" and sentiment.score >= 0.4:
         return True
     return False
+
+
+# ---------------------------------------------------------------------------
+# Jev AI — urgent-risk check (optional; gated by config.USE_AI_ENGINE)
+# ---------------------------------------------------------------------------
+
+def assess_urgent_risk(symbol: str, direction: str, sentiment: SentimentResult) -> Optional[float]:
+    """
+    Ask Jev whether the cached headlines pose urgent risk to a pending
+    `direction` trade on `symbol`. Returns a 0-1 probability, or None if
+    Jev is disabled, unreachable, or there are no headlines to assess.
+
+    Never raises — same fail-open contract as get_sentiment(): a broken AI
+    call must not block trading signals.
+    """
+    if not getattr(config, "USE_AI_ENGINE", False):
+        return None
+    if not sentiment.headlines:
+        return None
+
+    from core import jev_client
+
+    state = {
+        "symbol": symbol,
+        "direction": direction,
+        "headlines": sentiment.headlines,
+        "keyword_sentiment": sentiment.label,
+    }
+    questions = {
+        "urgent": {
+            "type": "noul",
+            "instructions": (
+                f"Given these recent headlines about {symbol}, is there urgent "
+                f"negative news that should block or delay opening a {direction} "
+                f"trade right now?"
+            ),
+        }
+    }
+
+    try:
+        result = jev_client.ask(state, questions)
+    except jev_client.JevRateLimitError as exc:
+        logger.warning("Jev rate limited (%s) — skipping urgency check for %s", exc, symbol)
+        return None
+    except jev_client.JevError as exc:
+        logger.warning("Jev urgency check failed for %s: %s", symbol, exc)
+        return None
+
+    return result.answers.get("urgent", {}).get("noul")

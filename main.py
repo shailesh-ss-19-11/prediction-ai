@@ -12,9 +12,13 @@ import time
 from datetime import datetime, timezone
 
 import schedule
+from dotenv import load_dotenv
+
+load_dotenv()  # populate os.environ from .env for local dev; no-op if absent
 
 import api as api_server
 import config
+import news_fetcher
 import trade_journal
 from exchanges.delta_exchange import DeltaExchange
 from exchanges.ws_stream import start as ws_start, get_price as ws_price
@@ -247,6 +251,14 @@ def check_symbol(symbol: str) -> None:
             if not risk.can_trade:
                 logger.info("%s %s: risk check failed — %s",
                             symbol, setup.direction, risk.reason)
+                continue
+
+            # Jev AI urgent-news check (opt-in via config.USE_AI_ENGINE)
+            sentiment = news_fetcher.get_sentiment(symbol)
+            urgent_prob = news_fetcher.assess_urgent_risk(symbol, setup.direction, sentiment)
+            if urgent_prob is not None and urgent_prob >= config.JEV_URGENCY_THRESHOLD:
+                logger.info("%s %s: Jev flagged urgent news risk (p=%.2f) — skipping",
+                            symbol, setup.direction, urgent_prob)
                 continue
 
             logger.info(

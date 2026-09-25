@@ -78,8 +78,12 @@ MAX_CONTRACTS_PER_TRADE = 5   # Hard cap on live order size (1 contract = $1 not
                                # 5 contracts = $5 max exposure. Increase only when confident.
 MAX_DAILY_LOSS_PERCENT = 3.0
 MAX_DRAWDOWN_PERCENT   = 10.0
-USE_AI_ENGINE          = False  # flip True when ready
+USE_AI_ENGINE          = False  # flip True when ready — gates the Jev urgent-news check below
 
+# --- Jev AI (news urgency check) ---
+# Reads JEV_AI_API_KEY from the environment (never store it here) — see .env.example.
+# When USE_AI_ENGINE is True, a Jev probability >= this threshold skips the trade.
+JEV_URGENCY_THRESHOLD = 0.7
 # --- Database ---
 DATABASE_URL = "sqlite:///./data/tradesignal.db"
 

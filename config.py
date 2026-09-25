@@ -100,7 +100,7 @@ ACTIVE_EXCHANGE  = "delta"   # delta | binance | bybit
 TRADINGVIEW_SECRET = ""
 
 # --- Trading mode ---
-PAPER_TRADING_MODE    = True   # KEEP True until the loosened strategy is validated on paper (2+ weeks)
+PAPER_TRADING_MODE    = False   # KEEP True until the loosened strategy is validated on paper (2+ weeks)
 AUTO_TRADE            = True   # Auto-place limit orders on Delta Exchange when signal fires
 MAX_CONTRACTS_PER_TRADE = 1   # Hard cap — 1 contract = $1 notional. Safe for $3 balance.
 MAX_DAILY_LOSS_PERCENT = 3.0

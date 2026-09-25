@@ -1,0 +1,7 @@
+[settings]
+# Railway's build (mise) couldn't find a GitHub artifact attestation for
+# python@3.11.9 and refused to install it. Attestations are a supply-chain
+# verification step for the downloaded binary — disabling this trusts the
+# python-build-standalone release directly instead of requiring a signed
+# attestation for that exact patch version.
+python.github_attestations = false

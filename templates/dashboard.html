@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DeltaSignalBot — Dashboard</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --panel-border: #262b36;
+    --text: #e6e8ec;
+    --text-dim: #8b92a3;
+    --green: #22c55e;
+    --red: #ef4444;
+    --amber: #f59e0b;
+    --blue: #3b82f6;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 20px;
+  }
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  h1 { font-size: 20px; margin: 0; }
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+  .status-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--text-dim);
+  }
+  .status-dot.ok { background: var(--green); }
+  .status-dot.err { background: var(--red); }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .card .label { font-size: 12px; color: var(--text-dim); margin-bottom: 6px; }
+  .card .value { font-size: 22px; font-weight: 600; }
+  .value.pos { color: var(--green); }
+  .value.neg { color: var(--red); }
+
+  section { margin-bottom: 28px; }
+  h2 {
+    font-size: 14px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 0 0 10px 0;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 10px;
+    overflow: hidden;
+    font-size: 13px;
+  }
+  th, td {
+    text-align: left;
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--panel-border);
+    white-space: nowrap;
+  }
+  th {
+    color: var(--text-dim);
+    font-weight: 500;
+    font-size: 12px;
+  }
+  tr:last-child td { border-bottom: none; }
+  .dir-long  { color: var(--green); font-weight: 600; }
+  .dir-short { color: var(--red); font-weight: 600; }
+  .pnl-pos { color: var(--green); }
+  .pnl-neg { color: var(--red); }
+  .empty-row td {
+    text-align: center;
+    color: var(--text-dim);
+    padding: 20px;
+  }
+  .tag {
+    font-size: 11px;
+    padding: 2px 7px;
+    border-radius: 5px;
+    background: rgba(255,255,255,0.06);
+    color: var(--text-dim);
+  }
+  footer {
+    color: var(--text-dim);
+    font-size: 12px;
+    margin-top: 10px;
+  }
+  .scroll-x { overflow-x: auto; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📊 DeltaSignalBot — Paper Trading Dashboard</h1>
+  <span class="status-pill"><span id="status-dot" class="status-dot"></span><span id="status-text">connecting…</span></span>
+</header>
+
+<div class="cards">
+  <div class="card">
+    <div class="label">Balance</div>
+    <div class="value" id="c-balance">—</div>
+  </div>
+  <div class="card">
+    <div class="label">Total P&amp;L</div>
+    <div class="value" id="c-pnl">—</div>
+  </div>
+  <div class="card">
+    <div class="label">Win Rate</div>
+    <div class="value" id="c-winrate">—</div>
+  </div>
+  <div class="card">
+    <div class="label">Open Trades</div>
+    <div class="value" id="c-open">—</div>
+  </div>
+  <div class="card">
+    <div class="label">Closed Trades</div>
+    <div class="value" id="c-closed">—</div>
+  </div>
+</div>
+
+<section>
+  <h2>Open Trades</h2>
+  <div class="scroll-x">
+  <table>
+    <thead>
+      <tr>
+        <th>Symbol</th><th>Direction</th><th>Entry</th><th>SL</th>
+        <th>TP1</th><th>TP2</th><th>Size</th><th>Opened</th>
+      </tr>
+    </thead>
+    <tbody id="open-body">
+      <tr class="empty-row"><td colspan="8">Loading…</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section>
+  <h2>Recent Closed Trades</h2>
+  <div class="scroll-x">
+  <table>
+    <thead>
+      <tr>
+        <th>Symbol</th><th>Direction</th><th>Entry</th><th>Exit</th>
+        <th>PnL</th><th>Reason</th><th>Closed</th>
+      </tr>
+    </thead>
+    <tbody id="closed-body">
+      <tr class="empty-row"><td colspan="7">Loading…</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<footer>Auto-refreshes every 10s · Last updated: <span id="last-updated">—</span></footer>
+
+<script>
+const REFRESH_MS = 10000;
+
+function fmtMoney(n) {
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  const sign = n > 0 ? '+' : '';
+  return sign + '$' + Number(n).toFixed(2);
+}
+function fmtPrice(n) {
+  if (n === null || n === undefined) return '—';
+  return Number(n).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 4});
+}
+function fmtTime(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d)) return iso;
+  return d.toLocaleString();
+}
+function pnlClass(n) {
+  return n > 0 ? 'pnl-pos' : (n < 0 ? 'pnl-neg' : '');
+}
+function dirClass(dir) {
+  return dir === 'LONG' ? 'dir-long' : 'dir-short';
+}
+
+function renderOpenTrades(trades) {
+  const body = document.getElementById('open-body');
+  if (!trades || trades.length === 0) {
+    body.innerHTML = '<tr class="empty-row"><td colspan="8">No open trades</td></tr>';
+    return;
+  }
+  body.innerHTML = trades.map(t => `
+    <tr>
+      <td>${t.symbol}</td>
+      <td class="${dirClass(t.direction)}">${t.direction}</td>
+      <td>${fmtPrice(t.entry)}</td>
+      <td>${fmtPrice(t.stop_loss)}</td>
+      <td>${fmtPrice(t.tp1)}</td>
+      <td>${fmtPrice(t.tp2)}</td>
+      <td>${t.size}</td>
+      <td>${fmtTime(t.opened_at)}</td>
+    </tr>
+  `).join('');
+}
+
+function renderClosedTrades(trades) {
+  const body = document.getElementById('closed-body');
+  if (!trades || trades.length === 0) {
+    body.innerHTML = '<tr class="empty-row"><td colspan="7">No closed trades yet</td></tr>';
+    return;
+  }
+  const recent = trades.slice(-25).reverse();
+  body.innerHTML = recent.map(t => `
+    <tr>
+      <td>${t.symbol}</td>
+      <td class="${dirClass(t.direction)}">${t.direction}</td>
+      <td>${fmtPrice(t.entry)}</td>
+      <td>${fmtPrice(t.exit_price)}</td>
+      <td class="${pnlClass(t.pnl)}">${fmtMoney(t.pnl)}</td>
+      <td><span class="tag">${t.exit_reason || '—'}</span></td>
+      <td>${fmtTime(t.closed_at)}</td>
+    </tr>
+  `).join('');
+}
+
+async function refresh() {
+  try {
+    const [ptRes, statsRes] = await Promise.all([
+      fetch('/paper-trades'),
+      fetch('/paper-trades/stats'),
+    ]);
+    const pt = await ptRes.json();
+    const stats = await statsRes.json();
+
+    document.getElementById('status-dot').className = 'status-dot ok';
+    document.getElementById('status-text').textContent = 'connected';
+
+    document.getElementById('c-balance').textContent = '$' + Number(pt.current_balance).toFixed(2);
+    const totalPnl = stats.total_pnl ?? 0;
+    const pnlEl = document.getElementById('c-pnl');
+    pnlEl.textContent = fmtMoney(totalPnl);
+    pnlEl.className = 'value ' + (totalPnl > 0 ? 'pos' : (totalPnl < 0 ? 'neg' : ''));
+    document.getElementById('c-winrate').textContent = (stats.win_rate ?? 0) + '%';
+    document.getElementById('c-open').textContent = pt.open_trades.length;
+    document.getElementById('c-closed').textContent = pt.closed_trades.length;
+
+    renderOpenTrades(pt.open_trades);
+    renderClosedTrades(pt.closed_trades);
+
+    document.getElementById('last-updated').textContent = new Date().toLocaleTimeString();
+  } catch (err) {
+    document.getElementById('status-dot').className = 'status-dot err';
+    document.getElementById('status-text').textContent = 'disconnected — is the bot running?';
+    console.error('Dashboard refresh failed:', err);
+  }
+}
+
+refresh();
+setInterval(refresh, REFRESH_MS);
+</script>
+
+</body>
+</html>

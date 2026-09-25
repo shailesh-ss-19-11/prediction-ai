@@ -36,7 +36,7 @@ import time
 from dataclasses import asdict
 from datetime import datetime, timezone
 
-from flask import Flask, jsonify, request, send_file
+from flask import Flask, jsonify, render_template, request, send_file
 
 import config
 
@@ -116,6 +116,13 @@ def create_app(paper_engine):
     app = Flask(__name__)
     app.logger.disabled = True
 
+    # ── dashboard ─────────────────────────────────────────────────────────────
+
+    @app.route("/dashboard", methods=["GET"])
+    def dashboard():
+        """Live paper-trading dashboard — open trades, closed trades, P&L."""
+        return render_template("dashboard.html")
+
     # ── root ──────────────────────────────────────────────────────────────────
 
     @app.route("/", methods=["GET"])
@@ -124,6 +131,7 @@ def create_app(paper_engine):
             "service": "DeltaSignalBot API",
             "status":  "running",
             "endpoints": [
+                "/dashboard",
                 "/health",
                 "/paper-trades",
                 "/paper-trades/open",

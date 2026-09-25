@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Dict, Optional, Tuple
 
 import pandas as pd
@@ -83,7 +84,10 @@ class MarketDataManager:
 
     def fetch_mtf_candles(self, symbol: str) -> Dict[str, pd.DataFrame]:
         """
-        Fetch OHLCV data for all timeframes in TIMEFRAMES.
+        Fetch OHLCV data for all timeframes in TIMEFRAMES, concurrently —
+        each timeframe is an independent blocking HTTP call, so fetching
+        them in parallel threads cuts wall-clock time roughly 6x versus
+        fetching one at a time (network I/O releases the GIL).
 
         Returns
         -------
@@ -92,14 +96,21 @@ class MarketDataManager:
         Oldest row first.
         """
         result: Dict[str, pd.DataFrame] = {}
-        for tf in TIMEFRAMES:
-            df = self._fetch_with_cache(symbol, tf)
-            if df is not None:
-                result[tf] = df
-            else:
-                logger.warning(
-                    "[MarketData] No data returned for %s %s", symbol, tf
-                )
+        with ThreadPoolExecutor(max_workers=len(TIMEFRAMES)) as pool:
+            futures = {pool.submit(self._fetch_with_cache, symbol, tf): tf for tf in TIMEFRAMES}
+            for future in as_completed(futures):
+                tf = futures[future]
+                try:
+                    df = future.result()
+                except Exception:
+                    logger.exception("[MarketData] Unexpected error fetching %s %s", symbol, tf)
+                    df = None
+                if df is not None:
+                    result[tf] = df
+                else:
+                    logger.warning(
+                        "[MarketData] No data returned for %s %s", symbol, tf
+                    )
         return result
 
     def get_current_price(self, symbol: str) -> float:

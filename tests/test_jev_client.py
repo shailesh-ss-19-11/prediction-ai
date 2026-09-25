@@ -10,9 +10,21 @@ from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-os.environ.setdefault("JEV_AI_API_KEY", "test-key")
-
 from core import jev_client  # noqa: E402
+
+
+class _FakeKeyMixin:
+    """
+    Forces JEV_AI_API_KEY to a known fake value for the duration of each
+    test, regardless of what other test modules imported earlier in the
+    same run have already loaded into the real process environment (e.g.
+    via config.py's load_dotenv() picking up the real .env file).
+    """
+
+    def setUp(self):
+        self._env_patcher = patch.dict(os.environ, {"JEV_AI_API_KEY": "test-key"})
+        self._env_patcher.start()
+        self.addCleanup(self._env_patcher.stop)
 
 
 def _mock_response(status_code=200, json_data=None, headers=None, text=""):
@@ -28,7 +40,7 @@ def _mock_response(status_code=200, json_data=None, headers=None, text=""):
     return resp
 
 
-class AskTests(unittest.TestCase):
+class AskTests(_FakeKeyMixin, unittest.TestCase):
     @patch("core.jev_client.requests.post")
     def test_success(self, mock_post):
         mock_post.return_value = _mock_response(
@@ -102,7 +114,7 @@ class AskTests(unittest.TestCase):
                 jev_client.ask("state", {"q": {"type": "noul", "instructions": "?"}})
 
 
-class ListModelsTests(unittest.TestCase):
+class ListModelsTests(_FakeKeyMixin, unittest.TestCase):
     @patch("core.jev_client.requests.get")
     def test_filters_to_connected_models(self, mock_get):
         mock_get.return_value = _mock_response(

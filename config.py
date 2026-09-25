@@ -105,7 +105,7 @@ AUTO_TRADE            = True   # Auto-place limit orders on Delta Exchange when 
 MAX_CONTRACTS_PER_TRADE = 1   # Hard cap — 1 contract = $1 notional. Safe for $3 balance.
 MAX_DAILY_LOSS_PERCENT = 3.0
 MAX_DRAWDOWN_PERCENT   = 10.0
-USE_AI_ENGINE          = False  # flip True when ready
+USE_AI_ENGINE          = False  # flip True when ready — gates the Jev urgent-news check below
 
 # --- Data directory (Railway Volume mounted at /data, or local ./data) ---
 import os as _os
@@ -122,6 +122,11 @@ except OSError as _err:
           file=_sys.stderr)
     DATA_DIR = "data"
     _os.makedirs(DATA_DIR, exist_ok=True)
+
+# --- Jev AI (news urgency check) ---
+# Reads JEV_AI_API_KEY from the environment (never store it here) — see .env.example.
+# When USE_AI_ENGINE is True, a Jev probability >= this threshold skips the trade.
+JEV_URGENCY_THRESHOLD = 0.7
 
 # --- Database ---
 DATABASE_URL = f"sqlite:///{DATA_DIR}/tradesignal.db"

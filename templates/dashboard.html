@@ -130,8 +130,12 @@
 
 <div class="cards">
   <div class="card">
-    <div class="label">Balance</div>
+    <div class="label">Paper Balance</div>
     <div class="value" id="c-balance">—</div>
+  </div>
+  <div class="card">
+    <div class="label">Live Delta Balance</div>
+    <div class="value" id="c-live-balance">—</div>
   </div>
   <div class="card">
     <div class="label">Total P&amp;L</div>
@@ -281,6 +285,27 @@ async function refresh() {
     document.getElementById('status-dot').className = 'status-dot err';
     document.getElementById('status-text').textContent = 'disconnected — is the bot running?';
     console.error('Dashboard refresh failed:', err);
+  }
+
+  // Live exchange balance is fetched separately — an auth/IP-whitelist
+  // failure here shouldn't mark the whole dashboard as disconnected.
+  try {
+    const liveRes = await fetch('/account/balance');
+    const live = await liveRes.json();
+    const liveEl = document.getElementById('c-live-balance');
+    if (live.error) {
+      liveEl.textContent = 'error';
+      liveEl.title = live.error;
+      liveEl.className = 'value neg';
+    } else {
+      liveEl.textContent = '$' + Number(live.primary_balance).toFixed(2)
+        + (live.primary_asset ? ' ' + live.primary_asset : '');
+      liveEl.title = '';
+      liveEl.className = 'value';
+    }
+  } catch (err) {
+    document.getElementById('c-live-balance').textContent = '—';
+    console.error('Live balance fetch failed:', err);
   }
 }
 

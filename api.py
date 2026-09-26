@@ -112,7 +112,7 @@ def _journal_stats(records: list) -> dict:
 # App factory
 # ---------------------------------------------------------------------------
 
-def create_app(paper_engine):
+def create_app(paper_engine, exchange=None):
     app = Flask(__name__)
     app.logger.disabled = True
 
@@ -133,6 +133,7 @@ def create_app(paper_engine):
             "endpoints": [
                 "/dashboard",
                 "/health",
+                "/account/balance",
                 "/paper-trades",
                 "/paper-trades/open",
                 "/paper-trades/closed",
@@ -169,6 +170,55 @@ def create_app(paper_engine):
             "balance":       round(paper_engine.balance, 4),
             "open_trades":   len(open_trades),
             "closed_trades": len(closed_trades),
+        })
+
+    # ── account ───────────────────────────────────────────────────────────────
+
+    @app.route("/account/balance", methods=["GET"])
+    def get_account_balance():
+        """
+        Live wallet balance fetched directly from Delta Exchange (real account,
+        not the paper-trading simulation). Returns {} for balances if the
+        exchange isn't configured or the API call fails (bad key, IP not
+        whitelisted, etc.) — check /health and the bot logs in that case.
+        """
+        if exchange is None:
+            return jsonify({
+                "balances": {},
+                "primary_asset": None,
+                "primary_balance": 0.0,
+                "error": "Exchange client not attached to this API instance.",
+            }), 503
+
+        try:
+            balances = exchange.fetch_balance()
+        except Exception as exc:
+            logger.exception("Live balance fetch failed")
+            return jsonify({
+                "balances": {},
+                "primary_asset": None,
+                "primary_balance": 0.0,
+                "error": str(exc),
+            }), 502
+
+        primary_asset = None
+        primary_balance = 0.0
+        for candidate in ("USDT", "USD", "usdt", "usd"):
+            if candidate in balances:
+                primary_asset = candidate
+                primary_balance = balances[candidate]
+                break
+        if primary_asset is None and balances:
+            primary_asset = max(balances, key=balances.get)
+            primary_balance = balances[primary_asset]
+
+        return jsonify({
+            "balances": balances,
+            "primary_asset": primary_asset,
+            "primary_balance": round(primary_balance, 4),
+            "error": None if balances else (
+                "No balances returned — check API key validity and IP whitelist."
+            ),
         })
 
     # ── paper-trades ──────────────────────────────────────────────────────────
@@ -450,9 +500,9 @@ def create_app(paper_engine):
 # Thread entry point
 # ---------------------------------------------------------------------------
 
-def start_api_thread(paper_engine):
+def start_api_thread(paper_engine, exchange=None):
     """Start the Flask API in a background daemon thread."""
-    app  = create_app(paper_engine)
+    app  = create_app(paper_engine, exchange=exchange)
     port = int(os.environ.get("PORT", 5000))
 
     def _run():

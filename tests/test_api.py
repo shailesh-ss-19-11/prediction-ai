@@ -6,7 +6,9 @@ Run: python -m unittest tests.test_api -v
 
 import os
 import sys
+import tempfile
 import unittest
+from unittest.mock import MagicMock
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -16,9 +18,31 @@ from execution.paper_trading import PaperTradingEngine  # noqa: E402
 
 class ApiTests(unittest.TestCase):
     def setUp(self):
+        # Isolate from any real data/ files on disk (trade_records.json,
+        # cooldowns.json, etc.) — these tests must not depend on, or be
+        # broken by, whatever the bot has actually recorded locally.
+        self._tmpdir = tempfile.TemporaryDirectory()
+        self._orig_paths = {
+            "TRADE_RECORDS_FILE": api.TRADE_RECORDS_FILE,
+            "PAPER_TRADES_FILE": api.PAPER_TRADES_FILE,
+            "LIVE_ORDERS_FILE": api.LIVE_ORDERS_FILE,
+            "LIVE_POSITIONS_FILE": api.LIVE_POSITIONS_FILE,
+            "COOLDOWNS_FILE": api.COOLDOWNS_FILE,
+        }
+        api.TRADE_RECORDS_FILE = os.path.join(self._tmpdir.name, "trade_records.json")
+        api.PAPER_TRADES_FILE = os.path.join(self._tmpdir.name, "paper_trades.json")
+        api.LIVE_ORDERS_FILE = os.path.join(self._tmpdir.name, "live_orders.json")
+        api.LIVE_POSITIONS_FILE = os.path.join(self._tmpdir.name, "live_positions.json")
+        api.COOLDOWNS_FILE = os.path.join(self._tmpdir.name, "cooldowns.json")
+
         self.engine = PaperTradingEngine(500)
         self.app = api.create_app(self.engine)
         self.client = self.app.test_client()
+
+    def tearDown(self):
+        for name, value in self._orig_paths.items():
+            setattr(api, name, value)
+        self._tmpdir.cleanup()
 
     def test_dashboard_serves_html(self):
         resp = self.client.get("/dashboard")
@@ -95,6 +119,51 @@ class ApiTests(unittest.TestCase):
     def test_live_orders_empty_when_no_file(self):
         resp = self.client.get("/live-orders")
         self.assertEqual(resp.get_json(), {})
+
+
+class AccountBalanceTests(unittest.TestCase):
+    def test_no_exchange_attached_returns_503(self):
+        app = api.create_app(PaperTradingEngine(100))  # exchange=None (default)
+        client = app.test_client()
+        resp = client.get("/account/balance")
+        self.assertEqual(resp.status_code, 503)
+        self.assertEqual(resp.get_json()["balances"], {})
+
+    def test_picks_usdt_as_primary(self):
+        exchange = MagicMock()
+        exchange.fetch_balance.return_value = {"USDT": 5.88, "BTC": 0.0001}
+        app = api.create_app(PaperTradingEngine(100), exchange=exchange)
+        client = app.test_client()
+
+        resp = client.get("/account/balance")
+        data = resp.get_json()
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(data["primary_asset"], "USDT")
+        self.assertEqual(data["primary_balance"], 5.88)
+        self.assertIsNone(data["error"])
+
+    def test_empty_balances_reports_error_hint(self):
+        """Mirrors the real 401/IP-whitelist failure: fetch_balance() returns {}."""
+        exchange = MagicMock()
+        exchange.fetch_balance.return_value = {}
+        app = api.create_app(PaperTradingEngine(100), exchange=exchange)
+        client = app.test_client()
+
+        resp = client.get("/account/balance")
+        data = resp.get_json()
+        self.assertEqual(resp.status_code, 200)
+        self.assertIsNone(data["primary_asset"])
+        self.assertIsNotNone(data["error"])
+
+    def test_exchange_raises_returns_502(self):
+        exchange = MagicMock()
+        exchange.fetch_balance.side_effect = ConnectionError("network down")
+        app = api.create_app(PaperTradingEngine(100), exchange=exchange)
+        client = app.test_client()
+
+        resp = client.get("/account/balance")
+        self.assertEqual(resp.status_code, 502)
+        self.assertIn("network down", resp.get_json()["error"])
 
 
 if __name__ == "__main__":

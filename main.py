@@ -849,7 +849,7 @@ def main() -> None:
     _load_live_positions()
 
     # Start REST API server in background thread
-    api_server.start_api_thread(paper)
+    api_server.start_api_thread(paper, exchange=exchange)
 
     # Start WebSocket price stream in background
     ws_start()

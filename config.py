@@ -27,7 +27,7 @@ TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_IDS  = [c.strip() for c in os.environ.get("TELEGRAM_CHAT_IDS", "").split(",") if c.strip()]
 
 # --- Account ---
-ACCOUNT_BALANCE    = 3    # USD — actual balance on Delta Exchange
+ACCOUNT_BALANCE    = 5.88 # USD — actual balance on Delta Exchange (fallback if live fetch fails)
 
 # --- Symbols ---
 SYMBOLS = ["BTCUSD", "ETHUSD", "XAUTUSD"]

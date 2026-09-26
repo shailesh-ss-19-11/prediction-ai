@@ -1,0 +1,32 @@
+[
+  {
+    "id": "c2c91c46",
+    "symbol": "XAUTUSD",
+    "direction": "SHORT",
+    "entry": 4274.22,
+    "stop_loss": 4325.51064,
+    "tp1": 4171.63872,
+    "tp2": 4120.34808,
+    "lot_size": 0.000585,
+    "risk_dollars": 0.03,
+    "confidence": 0.857,
+    "rr": 2.0,
+    "reasons": [
+      "Price 4274.2200 < EMA200 1h (4323.0806) & 4h (4370.5266)",
+      "1h EMA20 (4287.5827) < EMA50 (4294.0456)",
+      "15m RSI 32.6 in sell zone [25\u201342]",
+      "Bearish volume spike on last closed candle > 1.5x 20-bar avg",
+      "4h structure: bearish (strength=0.75)",
+      "15m MACD bearish (line=-1.9434 < sig=2.2800, hist=-4.2235)"
+    ],
+    "opened_at": "2026-09-25T14:29:45.352117+00:00",
+    "status": "open",
+    "closed_at": null,
+    "exit_price": null,
+    "exit_reason": null,
+    "pnl": null,
+    "sl_hit": false,
+    "tp1_hit": false,
+    "tp2_hit": false
+  }
+]

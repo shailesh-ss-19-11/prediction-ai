@@ -1,24 +1,21 @@
-FROM python:3.12-slim
+FROM python:3.11-slim
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
     DATA_DIR=/data \
     PORT=5000
 
 WORKDIR /app
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install -r requirements.txt
 
 COPY . .
 
-# Persistent state (trade journal, paper trades, cooldowns, live orders/positions)
-RUN useradd --create-home appuser \
-    && mkdir -p /data \
-    && chown -R appuser:appuser /app /data
-USER appuser
+RUN mkdir -p /data /app/logs
 VOLUME ["/data"]
-
 EXPOSE 5000
 
+# Credentials come from .env at runtime (see docker-compose.yml), never baked in.
 CMD ["python", "main.py"]

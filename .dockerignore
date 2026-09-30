@@ -1,14 +1,9 @@
 .git
 .claude
 .venv
-__pycache__/
+__pycache__
 *.py[cod]
 .env
-logs/
-data/
-tests/
-scripts/
+logs
+tests
 *.json
-!templates/**
-Dockerfile
-.dockerignore

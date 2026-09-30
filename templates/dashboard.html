@@ -119,6 +119,20 @@
     margin-top: 10px;
   }
   .scroll-x { overflow-x: auto; }
+
+  .tabs { display:flex; gap:6px; margin-bottom:20px; border-bottom:1px solid var(--panel-border); flex-wrap:wrap; }
+  .tab { background:none; border:none; color:var(--text-dim); padding:9px 14px; font-size:14px; cursor:pointer; border-bottom:2px solid transparent; }
+  .tab.active { color:var(--text); border-bottom-color:var(--blue); }
+  .pane { display:none; }
+  .pane.active { display:block; }
+  .panel { background:var(--panel); border:1px solid var(--panel-border); border-radius:10px; padding:14px 16px; }
+  .filters { display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
+  select, input.filter { background:var(--panel); color:var(--text); border:1px solid var(--panel-border); border-radius:6px; padding:6px 10px; font-size:13px; }
+  pre.log { background:#0b0d11; border:1px solid var(--panel-border); border-radius:10px; padding:12px; margin:0; max-height:480px; overflow:auto; font-size:12px; line-height:1.5; white-space:pre-wrap; word-break:break-all; }
+  #equity-svg { width:100%; height:200px; display:block; }
+  .two-col { display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:16px; }
+  .cd-list { display:flex; flex-wrap:wrap; gap:8px; }
+  .cd { background:rgba(245,158,11,0.12); color:var(--amber); border-radius:6px; padding:4px 9px; font-size:12px; }
 </style>
 </head>
 <body>
@@ -155,39 +169,70 @@
   </div>
 </div>
 
-<section>
-  <h2>Open Trades</h2>
-  <div class="scroll-x">
-  <table>
-    <thead>
-      <tr>
-        <th>Symbol</th><th>Direction</th><th>Entry</th><th>SL</th>
-        <th>TP1</th><th>TP2</th><th>Size</th><th>Opened</th>
-      </tr>
-    </thead>
-    <tbody id="open-body">
-      <tr class="empty-row"><td colspan="8">Loading…</td></tr>
-    </tbody>
-  </table>
-  </div>
-</section>
+<nav class="tabs" id="tabs">
+  <button class="tab active" data-tab="overview">Overview</button>
+  <button class="tab" data-tab="positions">Positions</button>
+  <button class="tab" data-tab="history">History</button>
+  <button class="tab" data-tab="logs">Logs</button>
+</nav>
 
-<section>
-  <h2>Recent Closed Trades</h2>
-  <div class="scroll-x">
-  <table>
-    <thead>
-      <tr>
-        <th>Symbol</th><th>Direction</th><th>Entry</th><th>Exit</th>
-        <th>PnL</th><th>Reason</th><th>Closed</th>
-      </tr>
-    </thead>
-    <tbody id="closed-body">
-      <tr class="empty-row"><td colspan="7">Loading…</td></tr>
-    </tbody>
-  </table>
+<div class="pane active" id="pane-overview">
+  <section>
+    <h2>Equity Curve (cumulative closed P&amp;L)</h2>
+    <div class="panel"><svg id="equity-svg" viewBox="0 0 800 200" preserveAspectRatio="none"></svg></div>
+  </section>
+  <section>
+    <h2>Open Trades (paper)</h2>
+    <div class="scroll-x"><table>
+      <thead><tr><th>Symbol</th><th>Direction</th><th>Entry</th><th>SL</th><th>TP1</th><th>TP2</th><th>Size</th><th>Opened</th></tr></thead>
+      <tbody id="open-body"><tr class="empty-row"><td colspan="8">Loading…</td></tr></tbody>
+    </table></div>
+  </section>
+  <section>
+    <h2>Active Cooldowns</h2>
+    <div class="cd-list" id="cooldowns"><span class="tag">none</span></div>
+  </section>
+</div>
+
+<div class="pane" id="pane-positions">
+  <section>
+    <h2>Live Positions (entry filled)</h2>
+    <div class="scroll-x"><table><thead id="lp-head"></thead><tbody id="lp-body"><tr class="empty-row"><td>Loading…</td></tr></tbody></table></div>
+  </section>
+  <section>
+    <h2>Live Orders (unfilled)</h2>
+    <div class="scroll-x"><table><thead id="lo-head"></thead><tbody id="lo-body"><tr class="empty-row"><td>Loading…</td></tr></tbody></table></div>
+  </section>
+</div>
+
+<div class="pane" id="pane-history">
+  <section>
+    <h2>P&amp;L by Symbol (trade journal)</h2>
+    <div class="scroll-x"><table>
+      <thead><tr><th>Symbol</th><th>Trades</th><th>Win / Loss</th><th>Win rate</th><th>Avg R:R</th><th>P&amp;L</th></tr></thead>
+      <tbody id="sym-body"><tr class="empty-row"><td colspan="6">Loading…</td></tr></tbody>
+    </table></div>
+  </section>
+  <section>
+    <h2>Closed Trades</h2>
+    <div class="filters">
+      <select id="f-symbol"><option value="">All symbols</option></select>
+      <select id="f-dir"><option value="">Long &amp; Short</option><option>LONG</option><option>SHORT</option></select>
+      <select id="f-result"><option value="">Wins &amp; Losses</option><option value="win">Wins</option><option value="loss">Losses</option></select>
+    </div>
+    <div class="scroll-x"><table>
+      <thead><tr><th>Symbol</th><th>Direction</th><th>Entry</th><th>Exit</th><th>PnL</th><th>Reason</th><th>Closed</th></tr></thead>
+      <tbody id="closed-body"><tr class="empty-row"><td colspan="7">Loading…</td></tr></tbody>
+    </table></div>
+  </section>
+</div>
+
+<div class="pane" id="pane-logs">
+  <div class="two-col">
+    <section><h2>Bot Log (last 150)</h2><pre class="log" id="log-bot">Loading…</pre></section>
+    <section><h2>Error Log (last 150)</h2><pre class="log" id="log-err">Loading…</pre></section>
   </div>
-</section>
+</div>
 
 <footer>Auto-refreshes every 10s · Last updated: <span id="last-updated">—</span></footer>
 
@@ -224,8 +269,8 @@ function renderOpenTrades(trades) {
   }
   body.innerHTML = trades.map(t => `
     <tr>
-      <td>${t.symbol}</td>
-      <td class="${dirClass(t.direction)}">${t.direction}</td>
+      <td>${esc(t.symbol)}</td>
+      <td class="${dirClass(t.direction)}">${esc(t.direction)}</td>
       <td>${fmtPrice(t.entry)}</td>
       <td>${fmtPrice(t.stop_loss)}</td>
       <td>${fmtPrice(t.tp1)}</td>
@@ -236,37 +281,116 @@ function renderOpenTrades(trades) {
   `).join('');
 }
 
-function renderClosedTrades(trades) {
+let closedAll = [];
+
+function esc(v) {
+  return String(v ?? '—').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+function renderClosedTrades() {
   const body = document.getElementById('closed-body');
-  if (!trades || trades.length === 0) {
-    body.innerHTML = '<tr class="empty-row"><td colspan="7">No closed trades yet</td></tr>';
+  const sym = document.getElementById('f-symbol').value;
+  const dir = document.getElementById('f-dir').value;
+  const res = document.getElementById('f-result').value;
+  let rows = closedAll.filter(t =>
+    (!sym || t.symbol === sym) && (!dir || t.direction === dir) &&
+    (!res || (res === 'win' ? t.pnl > 0 : t.pnl < 0)));
+  if (rows.length === 0) {
+    body.innerHTML = '<tr class="empty-row"><td colspan="7">No closed trades</td></tr>';
     return;
   }
-  const recent = trades.slice(-25).reverse();
-  body.innerHTML = recent.map(t => `
+  body.innerHTML = rows.slice(-100).reverse().map(t => `
     <tr>
-      <td>${t.symbol}</td>
-      <td class="${dirClass(t.direction)}">${t.direction}</td>
+      <td>${esc(t.symbol)}</td>
+      <td class="${dirClass(t.direction)}">${esc(t.direction)}</td>
       <td>${fmtPrice(t.entry)}</td>
       <td>${fmtPrice(t.exit_price)}</td>
       <td class="${pnlClass(t.pnl)}">${fmtMoney(t.pnl)}</td>
-      <td><span class="tag">${t.exit_reason || '—'}</span></td>
+      <td><span class="tag">${esc(t.exit_reason)}</span></td>
       <td>${fmtTime(t.closed_at)}</td>
-    </tr>
-  `).join('');
+    </tr>`).join('');
+}
+
+function fillSymbolFilter() {
+  const sel = document.getElementById('f-symbol');
+  const cur = sel.value;
+  const syms = [...new Set(closedAll.map(t => t.symbol))].sort();
+  sel.innerHTML = '<option value="">All symbols</option>' +
+    syms.map(x => `<option${x === cur ? ' selected' : ''}>${esc(x)}</option>`).join('');
+}
+
+function renderEquity(trades) {
+  const svg = document.getElementById('equity-svg');
+  const sorted = [...trades].sort((a, b) => new Date(a.closed_at) - new Date(b.closed_at));
+  if (sorted.length < 2) {
+    svg.innerHTML = '<text x="400" y="100" fill="#8b92a3" text-anchor="middle" font-size="14">Not enough closed trades yet</text>';
+    return;
+  }
+  let cum = 0;
+  const pts = [0, ...sorted.map(t => (cum += (t.pnl || 0)))];
+  const min = Math.min(...pts), max = Math.max(...pts), span = (max - min) || 1;
+  const x = i => 10 + (780 * i) / (pts.length - 1);
+  const y = v => 190 - (180 * (v - min)) / span;
+  const line = pts.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  const color = cum >= 0 ? '#22c55e' : '#ef4444';
+  svg.innerHTML =
+    `<line x1="10" x2="790" y1="${y(0)}" y2="${y(0)}" stroke="#262b36" stroke-dasharray="4"/>` +
+    `<path d="${line}" fill="none" stroke="${color}" stroke-width="2" vector-effect="non-scaling-stroke"/>` +
+    `<text x="12" y="14" fill="#8b92a3" font-size="11">${fmtMoney(max)}</text>` +
+    `<text x="12" y="198" fill="#8b92a3" font-size="11">${fmtMoney(min)}</text>`;
+}
+
+function renderKV(headId, bodyId, obj, emptyMsg) {
+  const head = document.getElementById(headId), body = document.getElementById(bodyId);
+  const entries = Object.entries(obj || {}).filter(([k]) => k !== 'error');
+  if (entries.length === 0) {
+    head.innerHTML = '';
+    body.innerHTML = `<tr class="empty-row"><td>${emptyMsg}</td></tr>`;
+    return;
+  }
+  const cols = [...new Set(entries.flatMap(([, v]) => Object.keys(v || {})))];
+  head.innerHTML = '<tr><th>ID</th>' + cols.map(c => `<th>${esc(c)}</th>`).join('') + '</tr>';
+  body.innerHTML = entries.map(([id, v]) =>
+    `<tr><td>${esc(id)}</td>` + cols.map(c => {
+      const val = v[c];
+      return `<td>${typeof val === 'object' && val !== null ? esc(JSON.stringify(val)) : esc(val)}</td>`;
+    }).join('') + '</tr>').join('');
+}
+
+function renderSymbols(stats) {
+  const body = document.getElementById('sym-body');
+  const entries = Object.entries((stats && stats.by_symbol) || {});
+  if (entries.length === 0) {
+    body.innerHTML = '<tr class="empty-row"><td colspan="6">No journal data</td></tr>';
+    return;
+  }
+  body.innerHTML = entries.map(([sym, s]) => `
+    <tr><td>${esc(sym)}</td><td>${s.total_trades}</td><td>${s.winning} / ${s.losing}</td>
+    <td>${s.win_rate}%</td><td>${s.avg_rr}</td>
+    <td class="${pnlClass(s.total_pnl)}">${fmtMoney(s.total_pnl)}</td></tr>`).join('');
+}
+
+function renderCooldowns(cd) {
+  const el = document.getElementById('cooldowns');
+  const keys = Object.keys(cd || {}).filter(k => k !== 'error');
+  el.innerHTML = keys.length
+    ? keys.map(k => `<span class="cd">${esc(k)} · ${esc(cd[k].remaining)}</span>`).join('')
+    : '<span class="tag">none</span>';
+}
+
+async function getJSON(url) {
+  const r = await fetch(url);
+  return r.json();
 }
 
 async function refresh() {
   try {
-    const [ptRes, statsRes] = await Promise.all([
-      fetch('/paper-trades'),
-      fetch('/paper-trades/stats'),
+    const [pt, stats, health] = await Promise.all([
+      getJSON('/paper-trades'), getJSON('/paper-trades/stats'), getJSON('/health'),
     ]);
-    const pt = await ptRes.json();
-    const stats = await statsRes.json();
 
     document.getElementById('status-dot').className = 'status-dot ok';
-    document.getElementById('status-text').textContent = 'connected';
+    document.getElementById('status-text').textContent = 'running · uptime ' + health.uptime;
 
     document.getElementById('c-balance').textContent = '$' + Number(pt.current_balance).toFixed(2);
     const totalPnl = stats.total_pnl ?? 0;
@@ -277,8 +401,11 @@ async function refresh() {
     document.getElementById('c-open').textContent = pt.open_trades.length;
     document.getElementById('c-closed').textContent = pt.closed_trades.length;
 
+    closedAll = pt.closed_trades;
     renderOpenTrades(pt.open_trades);
-    renderClosedTrades(pt.closed_trades);
+    fillSymbolFilter();
+    renderClosedTrades();
+    renderEquity(closedAll);
 
     document.getElementById('last-updated').textContent = new Date().toLocaleTimeString();
   } catch (err) {
@@ -287,11 +414,9 @@ async function refresh() {
     console.error('Dashboard refresh failed:', err);
   }
 
-  // Live exchange balance is fetched separately — an auth/IP-whitelist
-  // failure here shouldn't mark the whole dashboard as disconnected.
+  // Secondary panels: a failure in one shouldn't mark the dashboard disconnected.
   try {
-    const liveRes = await fetch('/account/balance');
-    const live = await liveRes.json();
+    const live = await getJSON('/account/balance');
     const liveEl = document.getElementById('c-live-balance');
     if (live.error) {
       liveEl.textContent = 'error';
@@ -305,12 +430,48 @@ async function refresh() {
     }
   } catch (err) {
     document.getElementById('c-live-balance').textContent = '—';
-    console.error('Live balance fetch failed:', err);
+  }
+
+  try {
+    const [lp, lo, cd, rec] = await Promise.all([
+      getJSON('/live-positions'), getJSON('/live-orders'),
+      getJSON('/cooldowns'), getJSON('/trade-records/stats'),
+    ]);
+    renderKV('lp-head', 'lp-body', lp, 'No live positions');
+    renderKV('lo-head', 'lo-body', lo, 'No unfilled orders');
+    renderCooldowns(cd);
+    renderSymbols(rec);
+  } catch (err) {
+    console.error('Secondary panels failed:', err);
   }
 }
 
+async function refreshLogs() {
+  try {
+    const [bot, errs] = await Promise.all([getJSON('/logs/bot?tail=150'), getJSON('/logs/errors?tail=150')]);
+    const fill = (id, d) => {
+      const el = document.getElementById(id);
+      const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 20;
+      el.textContent = (d.content || []).join('\n') || '(empty)';
+      if (atBottom) el.scrollTop = el.scrollHeight;
+    };
+    fill('log-bot', bot);
+    fill('log-err', errs);
+  } catch (err) {
+    console.error('Log refresh failed:', err);
+  }
+}
+
+document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b === btn));
+  document.querySelectorAll('.pane').forEach(p => p.classList.toggle('active', p.id === 'pane-' + btn.dataset.tab));
+  if (btn.dataset.tab === 'logs') refreshLogs();
+}));
+['f-symbol', 'f-dir', 'f-result'].forEach(id => document.getElementById(id).addEventListener('change', renderClosedTrades));
+
 refresh();
 setInterval(refresh, REFRESH_MS);
+setInterval(() => { if (document.getElementById('pane-logs').classList.contains('active')) refreshLogs(); }, REFRESH_MS);
 </script>
 
 </body>
